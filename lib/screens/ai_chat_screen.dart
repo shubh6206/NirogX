@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 class AiChatScreen extends StatelessWidget {
@@ -5,8 +6,10 @@ class AiChatScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('AI Chat Screen'),
+    return const Scaffold(
+      body: Center(
+        child: Text('AI Chat Screen'),
+      ),
     );
   }
 }

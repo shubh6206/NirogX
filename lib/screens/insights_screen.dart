@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 class InsightsScreen extends StatelessWidget {
@@ -5,8 +6,10 @@ class InsightsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Insights Screen'),
+    return const Scaffold(
+      body: Center(
+        child: Text('Insights Screen'),
+      ),
     );
   }
 }

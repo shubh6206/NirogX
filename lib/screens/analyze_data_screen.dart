@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 class AnalyzeDataScreen extends StatelessWidget {
@@ -5,8 +6,10 @@ class AnalyzeDataScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Analyze Data Screen'),
+    return const Scaffold(
+      body: Center(
+        child: Text('Analyze Data Screen'),
+      ),
     );
   }
 }
