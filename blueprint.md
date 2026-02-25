@@ -3,46 +3,63 @@
 
 ## Overview
 
-NirogX is a health and wellness application that allows users to track their health, get AI-powered insights, and manage their medical information.
+NirogX is a personal health assistant application designed to help users track, analyze, and understand their health data. The app provides AI-powered insights, a chat interface for health queries, and tools for managing personal health information.
 
 ## Style, Design, and Features
 
-### Initial Version (v1.0)
+### Version 1.0 (Initial Implementation)
 
-*   **UI Flow:**
-    *   **Authentication:** Login and Sign Up screens.
-    *   **Home Screen:** A central hub with a bottom navigation bar.
-    *   **Main Sections:** Analyze Data, AI Chat, Insights, and Profile.
-*   **Design:**
-    *   **Color Scheme:** Primary color is a shade of green, inspired by the logo.
-    *   **Typography:** Using Google Fonts for a modern and clean look.
-    *   **Iconography:** Using Material Design icons for navigation and actions.
-*   **Features:**
-    *   **Authentication:** Basic email/password authentication flow.
-    *   **Analyze Data:** UI for scanning reports, logging symptoms, and connecting devices.
-    *   **AI Chat:** A simple chat interface.
-    *   **Insights:** Placeholders for trends, reports, and alerts.
-    *   **Profile:** A screen with options for managing user information and settings.
+#### Authentication
+- **Login Screen:** Allows existing users to log in.
+- **Sign-up Screen:** Allows new users to create a profile.
+
+#### Main Application
+- **Home Screen:** The central navigation hub of the application.
+- **Bottom Navigation Bar:** Provides access to the main sections of the app: Home, Analyze, Insights, AI Chat, and Profile.
+
+#### Core Features
+- **Analyze Data:** A section for users to input health data by scanning reports, logging symptoms, or connecting devices.
+- **AI Chat:** An interface for users to ask health-related questions and upload documents for analysis.
+- **Insights:** A section to display trends, personalized reports, and predictive alerts based on the user's health data.
+- **Profile:** A section for users to manage their personal information, medical history, connected devices, and app settings.
+
+#### Styling
+- **Theme:** A modern, clean theme with a green and white color palette, inspired by the NirogX logo.
+- **Typography:** Uses the Google Fonts library for a clean and readable text hierarchy.
+- **UI Components:** Follows Material Design 3 principles for a consistent and intuitive user experience.
 
 ## Current Plan
 
-### Implement the UI Flow from the Design
+### Implement the Basic UI Flow and Navigation
 
-1.  **Project Structure:**
-    *   Create a `screens` directory for all the app screens.
-    *   Create a `widgets` directory for reusable UI components.
-    *   Create placeholder files for each screen.
-2.  **Authentication Flow:**
-    *   Implement the `LoginScreen` and `SignUpScreen`.
-    *   Set up navigation to the `HomeScreen` after successful authentication.
-3.  **Home Screen:**
-    *   Create a `HomeScreen` with a `BottomNavigationBar`.
-    *   Implement the navigation to the "Analyze", "Insights", "AI Chat", and "Profile" screens.
-4.  **Implement Screens:**
-    *   Create the UI for the "Analyze Data" screen.
-    *   Create the UI for the "AI Chat" screen.
-    *   Create the UI for the "Insights" screen.
-    *   Create the UI for the "Profile" screen.
-5.  **Theming:**
-    *   Apply a consistent `ThemeData` across the app.
-    *   Use the green color scheme and Google Fonts.
+**Objective:** Create the foundational structure of the app, including all the main screens and the navigation between them.
+
+**Steps:**
+
+1.  **Set up Project:**
+    *   Add necessary dependencies: `provider`, `google_fonts`, and `go_router`.
+
+2.  **Create File Structure:**
+    *   Organize the `lib` directory into subfolders for screens, routing, theme, and widgets to maintain a clean and scalable codebase.
+
+3.  **Implement Routing:**
+    *   Use `go_router` to define routes for all screens, including a nested navigation structure for the bottom navigation bar.
+
+4.  **Design Theme:**
+    *   Create a `ThemeData` object that defines the app's color scheme, typography, and component styles.
+
+5.  **Build Screens (Placeholder):**
+    *   Create stateless widgets for each screen in the UI flow:
+        - `LoginScreen`
+        - `SignUpScreen`
+        - `HomeScreen`
+        - `AnalyzeDataScreen`
+        - `AiChatScreen`
+        - `InsightsScreen`
+        - `ProfileScreen`
+
+6.  **Create Main Scaffold:**
+    *   Implement a stateful shell route with a `Scaffold` and a `BottomNavigationBar` to manage the main app sections.
+
+7.  **Update `main.dart`:**
+    *   Configure the `MaterialApp.router` to use the defined router and theme.
