@@ -1,122 +1,106 @@
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const NirogXApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class NirogXApp extends StatelessWidget {
+  const NirogXApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'NirogX Health Analyzer',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+        useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const HealthScorePage(title: 'NirogX Health Analysis'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
+class HealthScorePage extends StatefulWidget {
+  const HealthScorePage({super.key, required this.title});
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<HealthScorePage> createState() => _HealthScorePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _HealthScorePageState extends State<HealthScorePage> {
+  final TextEditingController _metricController = TextEditingController();
+  String _healthStatus = "Enter your health metric to begin";
+  bool _isLoading = false;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  // IMPORTANT: 10.0.2.2 is the address to reach your Python server 
+  // from the Android Emulator.
+  final String _apiUrl = "http://127.0.0.1:8000/health-score";
+
+  Future<void> _getHealthScore() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse(_apiUrl),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"metric_value": _metricController.text}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _healthStatus = "Health Score: ${data['score']}\nResult: ${data['status']}";
+        });
+      } else {
+        setState(() => _healthStatus = "Error: Server returned ${response.statusCode}");
+      }
+    } catch (e) {
+      setState(() => _healthStatus = "Connection Failed: Check if Python API is running");
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text('You have pushed the button this many times:'),
+            TextField(
+              controller: _metricController,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'Enter Health Metric (e.g., Blood Sugar)',
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 20),
+            _isLoading 
+              ? const CircularProgressIndicator()
+              : ElevatedButton(
+                  onPressed: _getHealthScore,
+                  child: const Text('Calculate NirogX Score'),
+                ),
+            const SizedBox(height: 30),
             Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+              _healthStatus,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
