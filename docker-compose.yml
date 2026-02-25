@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  backend:
+    build: ./nirogx_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./nirogx_api:/code/app
+  db:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=nirogx
+    ports:
+      - "5432:5432"

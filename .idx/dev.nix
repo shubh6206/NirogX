@@ -7,6 +7,9 @@
   packages = [
     pkgs.jdk21
     pkgs.unzip
+    pkgs.python311
+    pkgs.python311Packages.pip
+    pkgs.python311Packages.virtualenv
   ];
   # Sets environment variables in the workspace
   env = {};
@@ -17,8 +20,6 @@
       "Dart-Code.dart-code"
     ];
     workspace = {
-      # Runs when a workspace is first created with this `dev.nix` file
-      onCreate = { };
       # To run something each time the workspace is (re)started, use the `onStart` hook
     };
     # Enable previews and customize configuration
