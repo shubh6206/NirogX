@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "906457992665",
+    "project_id": "agentflow-20n5j",
+    "storage_bucket": "agentflow-20n5j.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:906457992665:android:b544833c40b30bb1491dc8",
+        "android_client_info": {
+          "package_name": "com.example.myapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB9Mb9fwU6KZpvXZtmMheBKUvDztsz0_xI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

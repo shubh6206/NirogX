@@ -30,36 +30,23 @@ NirogX is a personal health assistant application designed to help users track, 
 
 ## Current Plan
 
-### Implement the Basic UI Flow and Navigation
+### Build Out the UI for Core Screens
 
-**Objective:** Create the foundational structure of the app, including all the main screens and the navigation between them.
+**Objective:** Implement the user interface for the login, insights, analyze data, and profile screens.
 
 **Steps:**
 
-1.  **Set up Project:**
-    *   Add necessary dependencies: `provider`, `google_fonts`, and `go_router`.
+1.  **Login Screen UI:**
+    *   Create a visually appealing login screen with a logo, email and password fields, a login button, and links for password recovery and sign-up.
 
-2.  **Create File Structure:**
-    *   Organize the `lib` directory into subfolders for screens, routing, theme, and widgets to maintain a clean and scalable codebase.
+2.  **Insights Screen UI:**
+    *   Design a screen to display health insights, including charts and graphs for visualizing trends.
 
-3.  **Implement Routing:**
-    *   Use `go_router` to define routes for all screens, including a nested navigation structure for the bottom navigation bar.
+3.  **Analyze Data Screen UI:**
+    *   Build a screen that allows users to input health data through various methods like scanning reports or manual entry.
 
-4.  **Design Theme:**
-    *   Create a `ThemeData` object that defines the app's color scheme, typography, and component styles.
+4.  **Profile Screen UI:**
+    *   Create a profile screen where users can view and edit their personal information and access a help section.
 
-5.  **Build Screens (Placeholder):**
-    *   Create stateless widgets for each screen in the UI flow:
-        - `LoginScreen`
-        - `SignUpScreen`
-        - `HomeScreen`
-        - `AnalyzeDataScreen`
-        - `AiChatScreen`
-        - `InsightsScreen`
-        - `ProfileScreen`
-
-6.  **Create Main Scaffold:**
-    *   Implement a stateful shell route with a `Scaffold` and a `BottomNavigationBar` to manage the main app sections.
-
-7.  **Update `main.dart`:**
-    *   Configure the `MaterialApp.router` to use the defined router and theme.
+5.  **AI Chat Functionality:**
+    *   Begin implementing the AI chat screen, integrating an open-source model for answering health-related questions.

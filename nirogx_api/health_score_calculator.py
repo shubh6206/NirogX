@@ -1,53 +1,68 @@
-
-from models import UserVitalsPayload
+from models import UserVitalsPayload, ActivityLevelEnum
 
 class HealthScoreCalculator:
-    def _get_dynamic_weights(self, age: int) -> tuple[float, float, float]:
+    def __init__(self):
+        # Maximum points allocated per category (Total = 100)
+        self.MAX_AGE_SCORE = 20.0
+        self.MAX_BMI_SCORE = 25.0
+        self.MAX_HR_SCORE = 20.0
+        self.MAX_SLEEP_SCORE = 15.0
+        self.MAX_ACTIVITY_SCORE = 20.0
+
+        # Base optimal values for calculation
+        self.OPTIMAL_AGE = 20.0
+        self.OPTIMAL_BMI = 22.0
+        self.OPTIMAL_HR = 70.0
+        self.OPTIMAL_SLEEP = 8.0
+
+        # Activity level scoring mapping
+        self.ACTIVITY_SCORES = {
+            ActivityLevelEnum.sedentary: 0.0,
+            ActivityLevelEnum.light: 5.0,
+            ActivityLevelEnum.moderate: 10.0,
+            ActivityLevelEnum.active: 15.0,
+            ActivityLevelEnum.very_active: 20.0,
+            # Fallbacks as standard strings in case Enum is bypassed during tests
+            "sedentary": 0.0,
+            "light": 5.0,
+            "moderate": 10.0,
+            "active": 15.0,
+            "very_active": 20.0,
+        }
+
+    def calculate_score(self, vitals: UserVitalsPayload) -> float:
         """
-        Dynamically determine weights based on age.
-        These are example values and should be refined with domain expertise.
+        Calculates an overall health score (0-100) based on vital deviations.
         """
-        if age < 30:
-            return (0.4, 0.4, 0.2)  # Lifestyle is more important
-        elif 30 <= age < 60:
-            return (0.5, 0.3, 0.2)  # Vitals become more important
-        else:
-            return (0.6, 0.2, 0.2)  # Vitals are most important
-
-    def _normalize_value(self, value, min_val, max_val):
-        """Normalize a value to a 0-1 scale."""
-        return max(0, min(1, (value - min_val) / (max_val - min_val)))
-
-    def calculate_score(self, payload: UserVitalsPayload) -> float:
-        w1, w2, w3 = self._get_dynamic_weights(payload.age)
-
-        # Vitals Score (example logic)
-        # BMI: Ideal is 18.5-24.9. Score is inverted; lower is better if outside range.
-        bmi_score = 1 - self._normalize_value(abs(payload.bmi - 21.7), 0, 15)
-        # Heart Rate: Ideal is 60-100 bpm at rest.
-        hr_score = 1 - self._normalize_value(abs(payload.heart_rate - 80), 0, 40)
-        vitals_score = (bmi_score + hr_score) / 2
-
-        # Lifestyle Score (example logic)
-        # Sleep: Ideal is 7-9 hours.
-        sleep_score = self._normalize_value(payload.sleep_hours, 4, 8)
-        # Activity Level: Map categorical to numerical.
-        activity_map = {"sedentary": 0.2, "light": 0.5, "moderate": 0.8, "active": 1.0}
-        activity_score = activity_map.get(payload.activity_level.lower(), 0.5)
-        lifestyle_score = (sleep_score + activity_score) / 2
         
-        # Risk Factors (example logic)
-        # Age: Higher age is a risk factor.
-        age_risk = self._normalize_value(payload.age, 20, 80)
-        # BMI: Very high or low BMI is a risk.
-        bmi_risk = 1 - bmi_score # Inverted bmi_score
-        risk_factors_score = (age_risk + bmi_risk) / 2
+        # 1. Age Score: Gradual penalty as age increases past 20.
+        # Formula: $max(0, 20 - (Age - 20) \times 0.3)$
+        age_penalty = max(0.0, (vitals.age - self.OPTIMAL_AGE) * 0.3)
+        age_score = max(0.0, self.MAX_AGE_SCORE - age_penalty)
 
-        # Final Health Score Calculation
-        raw_score = (w1 * vitals_score) + (w2 * lifestyle_score) - (w3 * risk_factors_score)
+        # 2. BMI Score: Penalty for distance from optimal BMI of 22.
+        # Formula: $max(0, 25 - |BMI - 22| \times 1.5)$
+        bmi_penalty = abs(vitals.bmi - self.OPTIMAL_BMI) * 1.5
+        bmi_score = max(0.0, self.MAX_BMI_SCORE - bmi_penalty)
 
-        # Normalize to a score out of 100
-        final_score = max(0, min(100, raw_score * 100))
+        # 3. Heart Rate Score: Penalty for distance from optimal HR of 70.
+        # Formula: $max(0, 20 - |HR - 70| \times 0.5)$
+        hr_penalty = abs(vitals.heart_rate - self.OPTIMAL_HR) * 0.5
+        hr_score = max(0.0, self.MAX_HR_SCORE - hr_penalty)
+
+        # 4. Sleep Score: Penalty for distance from 8 hours of sleep.
+        # Formula: $max(0, 15 - |Sleep - 8| \times 4.0)$
+        sleep_penalty = abs(vitals.sleep_hours - self.OPTIMAL_SLEEP) * 4.0
+        sleep_score = max(0.0, self.MAX_SLEEP_SCORE - sleep_penalty)
+
+        # 5. Activity Score: Direct lookup
+        activity_level_key = getattr(vitals.activity_level, "value", vitals.activity_level)
+        activity_score = self.ACTIVITY_SCORES.get(activity_level_key, 0.0)
+
+        # Aggregate Total Score
+        total_score = age_score + bmi_score + hr_score + sleep_score + activity_score
         
-        return round(final_score, 2)
+        # Ensure it stays bounded strictly between 0 and 100
+        total_score = max(0.0, min(100.0, total_score))
 
+        return round(total_score, 2)

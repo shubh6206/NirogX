@@ -1,59 +1,61 @@
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-const Color primaryColor = Color(0xFF00C853); // A vibrant green
-const Color accentColor = Color(0xFF64FFDA); // A lighter green for accents
-const Color backgroundColor = Color(0xFFFFFFFF); // White background
-const Color textColor = Color(0xFF000000); // Black text
+class AppTheme {
+  static const Color primaryTeal = Color(0xFF00C9B7);
+  static const Color secondaryBlue = Color(0xFF007AFF);
+  static const Color backgroundWhite = Color(0xFFFFFFFF);
+  static const Color surfaceGray = Color(0xFFF1F4F8);
+  static const Color backgroundBlack = Color(0xFF121212);
+  static const Color surfaceBlack = Color(0xFF1E1E1E);
 
-final ThemeData appTheme = ThemeData(
-  useMaterial3: true,
-  primaryColor: primaryColor,
-  colorScheme: ColorScheme.fromSeed(
-    seedColor: primaryColor,
-    secondary: accentColor,
-    background: backgroundColor,
-    onBackground: textColor,
-  ),
-  textTheme: TextTheme(
-    displayLarge: GoogleFonts.roboto(
-      fontSize: 57,
-      fontWeight: FontWeight.bold,
-      color: textColor,
-    ),
-    titleLarge: GoogleFonts.roboto(
-      fontSize: 22,
-      fontWeight: FontWeight.w500,
-      color: textColor,
-    ),
-    bodyMedium: GoogleFonts.openSans(
-      fontSize: 14,
-      color: textColor,
-    ),
-  ),
-  appBarTheme: AppBarTheme(
-    backgroundColor: primaryColor,
-    foregroundColor: Colors.white,
-    titleTextStyle: GoogleFonts.roboto(
-      fontSize: 24,
-      fontWeight: FontWeight.bold,
-    ),
-  ),
-  elevatedButtonTheme: ElevatedButtonThemeData(
-    style: ElevatedButton.styleFrom(
-      foregroundColor: Colors.white,
-      backgroundColor: primaryColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      textStyle: GoogleFonts.roboto(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
+  static ThemeData get lightTheme {
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryTeal,
+        brightness: Brightness.light,
       ),
-    ),
+      textTheme: GoogleFonts.poppinsTextTheme(),
+    cardTheme: const CardThemeData(
+  elevation: 0,
+  color: surfaceGray,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.all(Radius.circular(20)),
   ),
-  bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-    selectedItemColor: primaryColor,
-    unselectedItemColor: Colors.grey,
+),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: backgroundWhite,
+        elevation: 0,
+        centerTitle: false,
+        iconTheme: IconThemeData(color: Colors.black),
+      ),
+    );
+  }
+
+  static ThemeData get darkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryTeal,
+        brightness: Brightness.dark,
+      ),
+      textTheme: GoogleFonts.poppinsTextTheme(
+        ThemeData.dark().textTheme,
+      ),
+     cardTheme: const CardThemeData(
+  elevation: 0,
+  color: surfaceBlack,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.all(Radius.circular(20)),
   ),
-);
+),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: backgroundBlack,
+        elevation: 0,
+        centerTitle: false,
+        iconTheme: IconThemeData(color: Colors.white),
+      ),
+    );
+  }
+}

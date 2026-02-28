@@ -1,70 +1,40 @@
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
-class ScaffoldWithBottomNavBar extends StatefulWidget {
-  final Widget child;
-  const ScaffoldWithBottomNavBar({super.key, required this.child});
+class ScaffoldWithBottomNavBar extends StatelessWidget {
+  const ScaffoldWithBottomNavBar({
+    required this.navigationShell,
+    Key? key,
+  }) : super(key: key ?? const ValueKey<String>('ScaffoldWithBottomNavBar'));
 
-  @override
-  State<ScaffoldWithBottomNavBar> createState() =>
-      _ScaffoldWithBottomNavBarState();
-}
+  final StatefulNavigationShell navigationShell;
 
-class _ScaffoldWithBottomNavBarState extends State<ScaffoldWithBottomNavBar> {
-  int _currentIndex = 0;
-
-  void _onTap(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-    switch (index) {
-      case 0:
-        context.go('/home');
-        break;
-      case 1:
-        context.go('/analyze');
-        break;
-      case 2:
-        context.go('/insights');
-        break;
-      case 3:
-        context.go('/ai-chat');
-        break;
-      case 4:
-        context.go('/profile');
-        break;
-    }
+  void _onTap(BuildContext context, int index) {
+    navigationShell.goBranch(
+      index,
+      initialLocation: index == navigationShell.currentIndex,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    const Color nirogTeal = Color(0xFF00C9B7);
+
     return Scaffold(
-      body: widget.child,
+      body: navigationShell,
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: _onTap,
+        type: BottomNavigationBarType.fixed,
+        currentIndex: navigationShell.currentIndex,
+        selectedItemColor: nirogTeal,
+        unselectedItemColor: Colors.grey,
+        onTap: (index) => _onTap(context, index),
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.analytics),
-            label: 'Analyze',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.insights),
-            label: 'Insights',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat),
-            label: 'AI Chat',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(LucideIcons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(LucideIcons.activity), label: 'Analyze'),
+          BottomNavigationBarItem(icon: Icon(LucideIcons.messageSquare), label: 'AI Chat'),
+          BottomNavigationBarItem(icon: Icon(LucideIcons.barChart), label: 'Insights'),
+          BottomNavigationBarItem(icon: Icon(LucideIcons.user), label: 'Profile'),
         ],
       ),
     );
