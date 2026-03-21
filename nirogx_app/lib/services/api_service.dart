@@ -33,7 +33,7 @@ class ApiService {
 
     // 2. Initialize the Chat Model with a strict Medical Persona
     _chatModel = GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       apiKey: apiKey,
       systemInstruction: Content.system(
         "You are NirogX, an AI medical assistant. Your job is to analyze user queries, "

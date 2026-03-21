@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:nirogx_app/providers/auth_provider.dart';
+
 // Feature Screens
 import 'package:nirogx_app/screens/auth/login_screen.dart';
 import 'package:nirogx_app/screens/auth/signup_screen.dart';
@@ -16,9 +18,41 @@ import 'package:nirogx_app/widgets/scaffold_with_bottom_nav_bar.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 class AppRouter {
-  static final GoRouter router = GoRouter(
-    initialLocation: '/login', // Force login on startup
+  final AuthProvider authProvider;
+
+  // Pass the provider into the router so it can listen for changes
+  AppRouter(this.authProvider);
+
+  late final GoRouter router = GoRouter(
+    // We can default to '/' now, because the redirect guard will catch unauthenticated users
+    initialLocation: '/', 
     navigatorKey: _rootNavigatorKey,
+    
+    // 1. Tell the router to rebuild whenever AuthProvider calls notifyListeners()
+    refreshListenable: authProvider,
+
+    // 2. THE AUTH GUARD
+    redirect: (context, state) {
+      // Wait for SharedPreferences to load from local storage
+      if (!authProvider.isInitialized) return null;
+
+      final bool isLoggedIn = authProvider.isLoggedIn;
+      final bool isGoingToAuth = state.uri.path == '/login' || state.uri.path == '/signup';
+
+      // Rule A: If NOT logged in, and trying to go anywhere else -> Login
+      if (!isLoggedIn && !isGoingToAuth) {
+        return '/login';
+      }
+
+      // Rule B: If LOGGED IN, and trying to view the Login/Signup screen -> Home
+      if (isLoggedIn && isGoingToAuth) {
+        return '/';
+      }
+
+      // Rule C: Otherwise, let them proceed normally
+      return null;
+    },
+
     routes: [
       // 1. Auth Routes: No Bottom Bar here
       GoRoute(
@@ -54,9 +88,13 @@ class AppRouter {
           ),
           StatefulShellBranch(
             routes: [
+              // FIXED: Cleaned up the builder method for the Chat route
               GoRoute(
                 path: '/chat',
-                builder: (context, state) => const AiChatScreen(),
+                builder: (context, state) {
+                  final incomingMessage = state.extra as String?;
+                  return AiChatScreen(initialMessage: incomingMessage);
+                },
               ),
             ],
           ),

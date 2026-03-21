@@ -18,7 +18,7 @@ class MedicalAIService:
 
         # We use gemini-1.5-flash as it is highly optimized for fast, text-based reasoning
         self.model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name="gemini-2.5-flash",
             system_instruction=(
                 "You are 'NirogX', an AI medical assistant. Your role is to provide a preliminary, "
                 "evidence-based clinical assessment based on the user's symptoms and duration. "

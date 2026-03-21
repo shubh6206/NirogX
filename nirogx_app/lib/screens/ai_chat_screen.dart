@@ -9,7 +9,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:nirogx_app/services/api_service.dart';
 
 class AiChatScreen extends StatefulWidget {
-  const AiChatScreen({super.key});
+  final String? initialMessage; // Accepts messages from other screens
+
+  const AiChatScreen({super.key, this.initialMessage});
 
   @override
   State<AiChatScreen> createState() => _AiChatScreenState();
@@ -21,12 +23,33 @@ class _AiChatScreenState extends State<AiChatScreen> {
   final List<Map<String, dynamic>> _messages = [];
   bool _isLoading = false;
 
-  // Image Picker state
   final ImagePicker _picker = ImagePicker();
   XFile? _selectedImage;
-
-  // Initialize our secure API Service Singleton
   final ApiService _apiService = ApiService();
+
+  @override
+  void initState() {
+    super.initState();
+    // If a message was passed in when the screen first loads, send it!
+    if (widget.initialMessage != null && widget.initialMessage!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _textController.text = widget.initialMessage!;
+        _sendMessage();
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant AiChatScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If the user navigates here from another tab with a NEW message, send it!
+    if (widget.initialMessage != null && widget.initialMessage != oldWidget.initialMessage) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _textController.text = widget.initialMessage!;
+        _sendMessage();
+      });
+    }
+  }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
