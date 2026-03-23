@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:nirogx_app/services/health_connect_service.dart';
 
 import 'package:nirogx_app/providers/auth_provider.dart';
 
@@ -15,6 +18,9 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   String _userName = "Loading...";
+  String _userEmail = "user@example.com";
+  String _userPhone = "+91 0000000000";
+  String? _profilePhotoPath;
   bool _dataPrivacy = true;
 
   @override
@@ -27,23 +33,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _userName = prefs.getString('userName') ?? "NirogX User";
+      _userEmail = prefs.getString('userEmail') ?? "user@example.com";
+      _userPhone = prefs.getString('userPhone') ?? "+91 0000000000";
+      _profilePhotoPath = prefs.getString('profilePhotoPath');
     });
   }
 
   // --- 1. Edit Profile Dialog (Fully Functional) ---
   Future<void> _showEditProfileDialog() async {
     final TextEditingController nameController = TextEditingController(text: _userName);
+    final TextEditingController emailController = TextEditingController(text: _userEmail);
+    final TextEditingController phoneController = TextEditingController(text: _userPhone);
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text("Edit Profile", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        content: TextField(
-          controller: nameController,
-          decoration: const InputDecoration(
-            labelText: "Full Name",
-            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00C9B7))),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: "Full Name",
+                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00C9B7))),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(
+                  labelText: "Email Address",
+                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00C9B7))),
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: phoneController,
+                decoration: const InputDecoration(
+                  labelText: "Phone Number",
+                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF00C9B7))),
+                ),
+                keyboardType: TextInputType.phone,
+              ),
+            ],
           ),
         ),
         actions: [
@@ -54,12 +90,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00C9B7)),
             onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
               if (nameController.text.trim().isNotEmpty) {
-                final prefs = await SharedPreferences.getInstance();
                 await prefs.setString('userName', nameController.text.trim());
-                setState(() => _userName = nameController.text.trim());
-                if (mounted) Navigator.pop(context);
               }
+              await prefs.setString('userEmail', emailController.text.trim());
+              await prefs.setString('userPhone', phoneController.text.trim());
+              
+              setState(() {
+                _userName = nameController.text.trim().isEmpty ? _userName : nameController.text.trim();
+                _userEmail = emailController.text.trim();
+                _userPhone = phoneController.text.trim();
+              });
+              
+              if (mounted) Navigator.pop(context);
             },
             child: Text("Save", style: GoogleFonts.poppins(color: Colors.white)),
           ),
@@ -68,49 +112,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // --- 2. Simulated Wearable Integration ---
-  void _simulateDeviceLinking() {
+  Future<void> _pickProfilePhoto() async {
+    final ImagePicker picker = ImagePicker();
+    try {
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('profilePhotoPath', image.path);
+        setState(() {
+          _profilePhotoPath = image.path;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error picking image: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Error picking image. Please try again.")),
+        );
+      }
+    }
+  }
+
+  void _showHelpSupport() {
     showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        // Automatically close after 3 seconds to simulate success
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted) {
-            Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("✅ Fitbit Device Linked Successfully!"),
-                backgroundColor: Color(0xFF00C9B7),
-              ),
-            );
-          }
-        });
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text("Help & Support", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        content: Text(
+          "For assistance, please contact support@nirogx.com or visit our FAQ page on the website.",
+          style: GoogleFonts.poppins(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("Close", style: GoogleFonts.poppins(color: const Color(0xFF00C9B7))),
+          ),
+        ],
+      ),
+    );
+  }
 
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 20),
-              const CircularProgressIndicator(color: Color(0xFF00C9B7)),
-              const SizedBox(height: 20),
-              Text(
-                "Scanning for Bluetooth Devices...",
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                "Please ensure your wearable is nearby and in pairing mode.",
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
-              ),
-            ],
+  // --- 2. Google Health Connect Integration ---
+  Future<void> _linkHealthConnect() async {
+    final service = HealthConnectService();
+    // Show a small loading indicator
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Connecting to Health Connect...")),
+    );
+    
+    bool success = await service.connectAndFetchData();
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Health Connect synced successfully!"),
+            backgroundColor: Color(0xFF00C9B7),
           ),
         );
-      },
-    );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Failed to sync. Please check permissions."),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
   }
 
   // --- 3. Dynamic Feature Bottom Sheet (For Data Tracking Modules) ---
@@ -211,10 +281,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ],
                   ),
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 20,
                     backgroundColor: Colors.white,
-                    backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'),
+                    backgroundImage: _profilePhotoPath != null
+                        ? FileImage(File(_profilePhotoPath!))
+                        : const NetworkImage('https://i.pravatar.cc/150?img=11') as ImageProvider,
                   ),
                 ],
               ),
@@ -229,13 +301,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(20)),
                 child: Row(
                   children: [
-                    const CircleAvatar(radius: 30, backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11')),
+                    GestureDetector(
+                      onTap: _pickProfilePhoto,
+                      child: Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          CircleAvatar(
+                            radius: 35,
+                            backgroundImage: _profilePhotoPath != null
+                                ? FileImage(File(_profilePhotoPath!))
+                                : const NetworkImage('https://i.pravatar.cc/150?img=11') as ImageProvider,
+                          ),
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(color: brandTeal, shape: BoxShape.circle),
+                            child: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(_userName, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+                          Text(_userEmail, style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
+                          Text(_userPhone, style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
+                          const SizedBox(height: 4),
                           GestureDetector(
                             onTap: _showEditProfileDialog,
                             child: Text('Edit Personal Info', style: GoogleFonts.poppins(fontSize: 12, color: brandTeal, fontWeight: FontWeight.w600)),
@@ -282,8 +375,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           title: 'Help & Support',
                           icon: LucideIcons.helpCircle,
                           subtitle: 'FAQS',
+                          buttonText: 'Get Help',
                           color: brandTeal,
-                          // No button text, just the card UI
+                          onPressed: _showHelpSupport,
                         ),
                       ],
                     ),
@@ -322,12 +416,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
-                                  onPressed: _simulateDeviceLinking,
+                                  onPressed: _linkHealthConnect,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: brandTeal,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                   ),
-                                  child: Text('Link Device', style: GoogleFonts.poppins(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                                  child: Text('Link Health Connect', style: GoogleFonts.poppins(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                                 ),
                               ),
                             ],
@@ -345,7 +439,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text('Data Privacy', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold)),
+                                  Expanded(
+                                    child: Text('Data Privacy', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold)),
+                                  ),
                                   Switch(
                                     value: _dataPrivacy,
                                     activeColor: brandTeal,

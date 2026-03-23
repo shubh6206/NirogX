@@ -37,15 +37,16 @@ class AppRouter {
       if (!authProvider.isInitialized) return null;
 
       final bool isLoggedIn = authProvider.isLoggedIn;
+      final bool isDemoMode = authProvider.isDemoMode;
       final bool isGoingToAuth = state.uri.path == '/login' || state.uri.path == '/signup';
 
-      // Rule A: If NOT logged in, and trying to go anywhere else -> Login
-      if (!isLoggedIn && !isGoingToAuth) {
+      // Rule A: If NOT logged in AND NOT in demo mode, and trying to go anywhere else -> Login
+      if (!isLoggedIn && !isDemoMode && !isGoingToAuth) {
         return '/login';
       }
 
-      // Rule B: If LOGGED IN, and trying to view the Login/Signup screen -> Home
-      if (isLoggedIn && isGoingToAuth) {
+      // Rule B: If LOGGED IN OR in demo mode, and trying to view the Login/Signup screen -> Home
+      if ((isLoggedIn || isDemoMode) && isGoingToAuth) {
         return '/';
       }
 

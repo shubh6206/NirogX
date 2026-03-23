@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import 'package:nirogx_app/providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -239,7 +241,25 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                               ],
-                            )
+                            ),
+                            const SizedBox(height: 24),
+                            
+                            // Demo Mode Button
+                            TextButton(
+                              onPressed: () {
+                                context.read<AuthProvider>().setDemoMode(true);
+                                context.go('/');
+                              },
+                              child: Text(
+                                "Try Demo Mode",
+                                style: GoogleFonts.poppins(
+                                  color: Colors.grey[600],
+                                  fontSize: 14,
+                                  decoration: TextDecoration.underline,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),

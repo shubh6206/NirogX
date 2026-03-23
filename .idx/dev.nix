@@ -21,6 +21,10 @@
     ];
     workspace = {
       # To run something each time the workspace is (re)started, use the `onStart` hook
+      onStart = {
+        install-python-deps = "cd nirogx_api && pip install -r requirements.txt";
+        install-flutter-deps = "cd nirogx_app && flutter pub get";
+      };
     };
     # Enable previews and customize configuration
     previews = {
