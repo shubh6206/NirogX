@@ -75,7 +75,8 @@ async def read_root():
 )
 async def analyze_symptoms_endpoint(
     payload: SymptomPayload,
-    ai_service: MedicalAIService = Depends(get_medical_ai_service)
+    ai_service: MedicalAIService = Depends(get_medical_ai_service),
+    db: Session = Depends(get_db) # Inject the DB here
 ):
     """
     Accepts user symptoms and returns a preliminary clinical assessment.
@@ -83,16 +84,8 @@ async def analyze_symptoms_endpoint(
     logger.info(f"Received symptom analysis request for user: {getattr(payload, 'user_id', 'unknown')}")
     
     try:
-        # Assuming your service returns a structured ClinicalAssessment or a string
-        result = ai_service.analyze_symptoms(payload)
-        
-        # If your service returns a raw string, construct the model:
-        if isinstance(result, str):
-            if "error" in result.lower():
-                raise ValueError(result)
-            return ClinicalAssessment(assessment=result, red_flags=[], confidence_score=0.0)
-            
-        # If your service already returns a ClinicalAssessment Pydantic model:
+        # Pass the db session into the service
+        result = ai_service.analyze_symptoms(payload, db)
         return result
         
     except ValueError as ve:
@@ -118,8 +111,8 @@ async def calculate_health_score_endpoint(
     logger.info(f"Received health score calculation request.")
     
     try:
-        score = score_calculator.calculate_score(payload)
-        return HealthScore(score=score)
+        result = score_calculator.calculate_full_profile(payload)
+        return HealthScore(**result)
         
     except ValueError as ve:
         logger.warning(f"Invalid vitals payload: {str(ve)}")

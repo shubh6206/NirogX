@@ -66,3 +66,23 @@ class HealthScoreCalculator:
         total_score = max(0.0, min(100.0, total_score))
 
         return round(total_score, 2)
+
+    def get_status_category(self, score: float) -> str:
+        """Maps the numerical score to a UI-friendly status string."""
+        if score >= 80.0:
+            return "Optimal"
+        elif score >= 60.0:
+            return "Good"
+        elif score >= 40.0:
+            return "Caution"
+        else:
+            return "Critical"
+
+    def calculate_full_profile(self, vitals: UserVitalsPayload) -> dict:
+        """Returns both the score and the status for the API response."""
+        score = self.calculate_score(vitals)
+        status = self.get_status_category(score)
+        return {
+            "score": score,
+            "status": status
+        }
