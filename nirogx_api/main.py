@@ -2,6 +2,8 @@ import logging
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from sqlalchemy.orm import Session
+from database import engine, Base, SessionLocal, DBVital, DBBloodPressure, DBSleepSession, DBUser
 
 # Load environment variables from .env file
 load_dotenv()
@@ -12,6 +14,7 @@ from models import (
     UserVitalsPayload,
     ClinicalAssessment,
     HealthScore,
+    HealthSyncPayload,
 )
 
 # Import Core Logic Services
@@ -29,6 +32,17 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs", # The Swagger UI your team will use
 )
+
+# Create database tables if they don't exist
+Base.metadata.create_all(bind=engine)
+
+# Database Dependency Injection
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 # 3. Add CORS Middleware (Crucial for Flutter integration)
 app.add_middleware(
@@ -113,3 +127,74 @@ async def calculate_health_score_endpoint(
     except Exception as e:
         logger.error(f"Unexpected error calculating health score: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error during scoring.")
+
+@app.post("/api/vitals/sync", tags=["Sync"])
+async def sync_vitals_endpoint(
+    payload: HealthSyncPayload,
+    db: Session = Depends(get_db) # Inject the DB session
+):
+    """
+    Receives synchronized health data from Flutter and stores it in SQLite.
+    """
+    logger.info(f"Received health sync payload from {payload.device_os} at {payload.sync_timestamp}")
+    
+    try:
+        # Note: In a production app, you would extract the user_id from a JWT token here.
+        # For now, we are ensuring a dummy user exists for testing.
+        test_user = db.query(DBUser).filter(DBUser.id == 1).first()
+        if not test_user:
+            test_user = DBUser(id=1, email="test@nirogx.com")
+            db.add(test_user)
+            db.commit()
+
+        # 1. Prepare Standard Vitals
+        db_vitals = [
+            DBVital(
+                user_id=1,
+                type=vital.type,
+                value=vital.value,
+                unit=vital.unit,
+                recorded_at=vital.recorded_at.replace(tzinfo=None) # SQLite doesn't natively support tzinfo
+            ) for vital in payload.vitals
+        ]
+        
+        # 2. Prepare Blood Pressure
+        db_bp = [
+            DBBloodPressure(
+                user_id=1,
+                systolic=bp.systolic,
+                diastolic=bp.diastolic,
+                recorded_at=bp.recorded_at.replace(tzinfo=None)
+            ) for bp in payload.blood_pressure
+        ]
+        
+        # 3. Prepare Sleep Sessions
+        db_sleep = [
+            DBSleepSession(
+                user_id=1,
+                stage=sleep.stage,
+                duration_minutes=sleep.duration_minutes,
+                start_time=sleep.start_time.replace(tzinfo=None),
+                end_time=sleep.end_time.replace(tzinfo=None)
+            ) for sleep in payload.sleep_sessions
+        ]
+
+        # Use bulk operations for performance
+        db.add_all(db_vitals)
+        db.add_all(db_bp)
+        db.add_all(db_sleep)
+        db.commit() # Save everything in one transaction
+
+        total_records = len(db_vitals) + len(db_bp) + len(db_sleep)
+        logger.info(f"Successfully saved {total_records} records to SQLite database.")
+        
+        return {
+            "status": "success",
+            "message": f"Successfully processed and saved {total_records} data points.",
+            "timestamp": payload.sync_timestamp
+        }
+        
+    except Exception as e:
+        db.rollback() # Cancel the transaction if anything goes wrong
+        logger.error(f"Error processing health sync: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error during data sync.")

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:health/health.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:nirogx_app/services/health_sync_service.dart';
 
 class HealthConnectService {
   final Health _health = Health();
@@ -59,6 +60,10 @@ class HealthConnectService {
             debugPrint("Time: ${dataPoint.dateFrom} to ${dataPoint.dateTo}");
             debugPrint("-----------------------");
           }
+          
+          // 4. Sync to Backend
+          final syncService = HealthSyncService();
+          await syncService.formatAndSyncData(cleanData);
           
           return true; 
 

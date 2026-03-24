@@ -5,3 +5,4 @@ pydantic
 openai
 google-generativeai
 python-dotenv
+sqlalchemy

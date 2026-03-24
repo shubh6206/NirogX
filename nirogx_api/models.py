@@ -1,6 +1,7 @@
 from enum import Enum
 from pydantic import BaseModel, Field
 from typing import List, Optional
+from datetime import datetime
 
 # -------------------------------------------------------------------
 # Enums for strict validation
@@ -83,3 +84,30 @@ class AnalysisHistory(BaseModel):
     timestamp: str = Field(..., description="ISO 8601 timestamp of when the analysis occurred.")
     symptom_payload: SymptomPayload
     clinical_assessment: ClinicalAssessment
+
+# -------------------------------------------------------------------
+# Health Sync Models
+# -------------------------------------------------------------------
+class VitalPoint(BaseModel):
+    type: str
+    value: float
+    unit: str
+    recorded_at: datetime
+
+class BloodPressurePoint(BaseModel):
+    systolic: float
+    diastolic: float
+    recorded_at: datetime
+
+class SleepSession(BaseModel):
+    stage: str
+    duration_minutes: int
+    start_time: datetime
+    end_time: datetime
+
+class HealthSyncPayload(BaseModel):
+    sync_timestamp: datetime
+    device_os: str
+    vitals: List[VitalPoint]
+    blood_pressure: List[BloodPressurePoint]
+    sleep_sessions: List[SleepSession]
