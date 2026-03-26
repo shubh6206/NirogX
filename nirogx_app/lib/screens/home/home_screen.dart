@@ -16,8 +16,24 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const Color brandTeal = Color(0xFF00C9B7);
+
   String _userName = "User";
   String? _profilePhotoPath;
+
+  // --- Habit Tracking State ---
+  int _waterGlasses = 6; // 1 glass = 0.2L. 6 glasses = 1.2L. Target = 10 (2.0L)
+  bool _windDownCompleted = false;
+  int _activeMinutes = 25; // Target = 30 mins
+
+  // Helper to calculate how many goals are fully completed
+  int get _completedHabitsCount {
+    int count = 0;
+    if (_waterGlasses >= 10) count++;
+    if (_windDownCompleted) count++;
+    if (_activeMinutes >= 30) count++;
+    return count;
+  }
 
   @override
   void initState() {
@@ -88,13 +104,66 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildHealthScoreCard(context, healthScore),
                   const SizedBox(height: 30),
 
-                  // 3. Quick Actions Row
-                  Text(
-                    "Quick Actions",
-                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+                  // --- Interactive Daily Action Plan ---
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Today\'s Action Plan', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      Text('$_completedHabitsCount/3 Done', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: brandTeal)),
+                    ],
                   ),
-                  const SizedBox(height: 15),
-                  _buildQuickActions(context),
+                  const SizedBox(height: 12),
+                  
+                  // 1. Hydration Goal (Tap to add 0.2L)
+                  _buildActionCard(
+                    icon: LucideIcons.droplets,
+                    title: 'Hydration Goal',
+                    subtitle: '${(_waterGlasses * 0.2).toStringAsFixed(1)}L / 2.0L completed',
+                    progress: (_waterGlasses / 10.0).clamp(0.0, 1.0),
+                    color: Colors.blueAccent,
+                    isCompleted: _waterGlasses >= 10,
+                    onTap: () {
+                      setState(() {
+                        if (_waterGlasses < 10) {
+                          _waterGlasses++;
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // 2. Wind Down Routine (Tap to toggle complete/incomplete)
+                  _buildActionCard(
+                    icon: LucideIcons.moon,
+                    title: 'Wind Down Routine',
+                    subtitle: _windDownCompleted ? 'Great job!' : 'No screens after 10 PM',
+                    progress: _windDownCompleted ? 1.0 : 0.0,
+                    color: Colors.indigoAccent,
+                    isCompleted: _windDownCompleted,
+                    onTap: () {
+                      setState(() {
+                        _windDownCompleted = !_windDownCompleted;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // 3. Active Minutes (Tap to add 5 minutes of activity)
+                  _buildActionCard(
+                    icon: LucideIcons.footprints,
+                    title: 'Active Minutes',
+                    subtitle: '$_activeMinutes / 30 mins',
+                    progress: (_activeMinutes / 30.0).clamp(0.0, 1.0),
+                    color: Colors.greenAccent.shade700,
+                    isCompleted: _activeMinutes >= 30,
+                    onTap: () {
+                      setState(() {
+                        if (_activeMinutes < 30) {
+                          _activeMinutes += 5;
+                        }
+                      });
+                    },
+                  ),
                   const SizedBox(height: 30),
 
                   // 4. Recent AI Insight - NOW DYNAMIC
@@ -208,28 +277,97 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _actionItem(context, LucideIcons.search, "Analyze", const Color(0xFFE0F7F5)),
-        _actionItem(context, LucideIcons.messageCircle, "AI Chat", const Color(0xFFE3F2FD)),
-        _actionItem(context, LucideIcons.calendar, "Reports", const Color(0xFFFFF3E0)),
-      ],
-    );
-  }
-
-  Widget _actionItem(BuildContext context, IconData icon, String label, Color color) {
-    return Column(
-      children: [
-        Container(
+  Widget _buildActionCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required double progress,
+    required Color color,
+    required bool isCompleted,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        splashColor: color.withValues(alpha: 0.1),
+        highlightColor: color.withValues(alpha: 0.05),
+        child: Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(16)),
-          child: Icon(icon, color: Colors.black87, size: 28),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isCompleted ? color.withValues(alpha: 0.3) : Colors.transparent,
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: Row(
+            children: [
+              // Icon Container
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isCompleted ? color : color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  isCompleted ? LucideIcons.check : icon,
+                  color: isCompleted ? Colors.white : color,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              
+              // Text and Progress Bar
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.poppins(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                        decoration: isCompleted ? TextDecoration.lineThrough : null,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    // Animated Progress Line
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: AnimatedTheme(
+                        data: Theme.of(context),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 6,
+                          backgroundColor: Colors.grey.shade100,
+                          color: color,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 8),
-        Text(label, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500)),
-      ],
+      ),
     );
   }
 
