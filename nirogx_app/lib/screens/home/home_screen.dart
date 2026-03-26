@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:nirogx_app/providers/symptom_provider.dart';
 import 'package:nirogx_app/health_score_view.dart'; // Ensure this exists or remove the route
@@ -14,13 +16,31 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  String _userName = "User";
+  String? _profilePhotoPath;
+
   @override
   void initState() {
     super.initState();
+    _loadUserData();
     // Fetch the latest database logs the moment the Home Screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<SymptomProvider>().loadSymptomLogs();
     });
+  }
+
+  // Fetch the data saved from the Profile Screen
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        // Grab the name, but just use the first name for a friendly greeting
+        String fullName = prefs.getString('userName') ?? "User";
+        _userName = fullName.split(' ')[0]; 
+        
+        _profilePhotoPath = prefs.getString('profilePhotoPath');
+      });
+    }
   }
 
   // --- Core Health Score Algorithm ---
@@ -101,7 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Hello, User!",
+              "Hello, $_userName!",
               style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             Text(
@@ -110,10 +130,15 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        const CircleAvatar(
+        CircleAvatar(
           radius: 25,
-          backgroundColor: Color(0xFFF1F4F8),
-          child: Icon(LucideIcons.user, color: Color(0xFF00C9B7)),
+          backgroundColor: const Color(0xFFF1F4F8),
+          backgroundImage: _profilePhotoPath != null 
+              ? FileImage(File(_profilePhotoPath!)) 
+              : null,
+          child: _profilePhotoPath == null 
+              ? const Icon(LucideIcons.user, color: Color(0xFF00C9B7)) 
+              : null,
         ),
       ],
     );
