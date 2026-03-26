@@ -1,7 +1,13 @@
+import io
+import os
+import json
+import PIL.Image
+import google.generativeai as genai
 import logging
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from typing import Optional
 from sqlalchemy.orm import Session
 from database import engine, Base, SessionLocal, DBVital, DBBloodPressure, DBSleepSession, DBUser
 
@@ -190,4 +196,70 @@ async def sync_vitals_endpoint(
     except Exception as e:
         db.rollback() # Cancel the transaction if anything goes wrong
         logger.error(f"Error processing health sync: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error during data sync.")
+        raise HTTPException(status_code=500, detail="Internal server error during data sync.")
+
+@app.post("/api/v1/chat", tags=["AI Chat"])
+async def chat_endpoint(
+    prompt: str = Form(...),
+    user_id: int = Form(...),
+    history: str = Form("[]"), # <-- NEW: Receive history as a JSON string
+    image: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db)
+):
+    """
+    RAG-enabled AI Chat with Conversation History memory.
+    """
+    logger.info(f"Chat request from user {user_id}. Image attached: {image is not None}")
+    
+    try:
+        # 1. Parse the incoming history from Flutter
+        parsed_history = json.loads(history)
+        gemini_history = []
+        for msg in parsed_history:
+            # Gemini strictly expects "user" or "model" roles
+            role = "user" if msg["role"] == "user" else "model"
+            gemini_history.append({"role": role, "parts": [msg["text"]]})
+
+        # 2. RETRIEVAL: Get context from SQLite
+        recent_vitals = db.query(DBVital).filter(DBVital.user_id == user_id).order_by(DBVital.recorded_at.desc()).limit(5).all()
+        if recent_vitals:
+            vitals_text = "\n".join([f"- {v.type}: {v.value} {v.unit} (recorded at {v.recorded_at})" for v in recent_vitals])
+            context_block = f"\n\n[SYSTEM CONTEXT - DO NOT MENTION UNLESS RELEVANT]\nUSER's RECENT DATABASE VITALS:\n{vitals_text}"
+        else:
+            context_block = "\n\n[SYSTEM CONTEXT]\nUSER's RECENT DATABASE VITALS: No recent data synced."
+
+        # 3. Initialize Model
+        system_instruction = (
+            "You are NirogX, a clinical AI assistant. "
+            "Answer the user's question directly and concisely. "
+            "Use the provided database vitals to personalize your answer if they are relevant to the question. "
+            "Always include a brief disclaimer that you are an AI, not a doctor."
+        )
+
+        apiKey = os.environ.get("GEMINI_API_KEY") 
+        genai.configure(api_key=apiKey)
+
+        model = genai.GenerativeModel(
+            model_name="gemini-2.5-flash",
+            system_instruction=system_instruction
+        )
+
+        # 4. GENERATION: Start a Chat Session with Memory
+        chat_session = model.start_chat(history=gemini_history)
+        
+        # Combine the user's prompt with our invisible system context
+        augmented_prompt = prompt + context_block
+
+        if image:
+            image_bytes = await image.read()
+            pil_image = PIL.Image.open(io.BytesIO(image_bytes))
+            # Send message to the active chat session
+            response = chat_session.send_message([augmented_prompt, pil_image])
+        else:
+            response = chat_session.send_message(augmented_prompt)
+
+        return {"status": "success", "response": response.text}
+
+    except Exception as e:
+        logger.error(f"Chat Error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate AI response.")

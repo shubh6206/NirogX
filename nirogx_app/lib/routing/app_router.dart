@@ -12,7 +12,7 @@ import 'package:nirogx_app/screens/profile/profile_screen.dart';
 // Feature Widgets (used as screens)
 import 'package:nirogx_app/screens/ai_chat_screen.dart';
 import 'package:nirogx_app/screens/analyze_data_screen.dart';
-import 'package:nirogx_app/screens/insights_screen.dart';
+import 'package:nirogx_app/screens/insights_screen.dart' as insights;
 import 'package:nirogx_app/widgets/scaffold_with_bottom_nav_bar.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -75,7 +75,7 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: '/', // The Home branch
-                builder: (context, state) => const HomeScreen(),
+                builder: (context, state) => HomeScreen(),
               ),
             ],
           ),
@@ -103,7 +103,7 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: '/insights',
-                builder: (context, state) => const InsightsScreen(),
+                builder: (context, state) => insights.InsightsScreen(),
               ),
             ],
           ),

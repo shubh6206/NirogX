@@ -96,6 +96,15 @@ class _AiChatScreenState extends State<AiChatScreen> {
       imageFile = File(_selectedImage!.path);
     }
 
+    // --- NEW: Extract chat history before adding the new message ---
+    // We map our local _messages to a simple "role" and "text" format.
+    List<Map<String, String>> chatHistory = _messages.map((m) {
+      return {
+        "role": m['sender'] == 'user' ? "user" : "model",
+        "text": m['text'] as String,
+      };
+    }).toList();
+
     setState(() {
       // We store the File locally to render it in the chat bubble
       _messages.add({
@@ -111,8 +120,12 @@ class _AiChatScreenState extends State<AiChatScreen> {
     _textController.clear();
 
     try {
-      // Calls the secure Gemini integration with optional image
-      final response = await _apiService.sendChatMessage(prompt, imageBytes: imageBytes);
+      // Calls the secure Gemini integration with optional image and history
+      final response = await _apiService.sendChatMessage(
+        prompt, 
+        imageBytes: imageBytes,
+        history: chatHistory,
+      );
       
       if (!mounted) return;
 

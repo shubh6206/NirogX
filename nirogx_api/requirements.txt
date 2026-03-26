@@ -7,3 +7,5 @@ google-generativeai
 python-dotenv
 sqlalchemy
 pandas
+Pillow
+python-multipart

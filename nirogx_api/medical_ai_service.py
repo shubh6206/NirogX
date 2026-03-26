@@ -20,7 +20,7 @@ class MedicalAIService:
         genai.configure(api_key=api_key)
 
         self.model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
+            model_name="gemini-2.5-flash",
             system_instruction=(
                 "You are 'NirogX', an AI medical assistant. Your role is to provide a preliminary, "
                 "evidence-based clinical assessment based on the user's symptoms and their recent biometric data. "
