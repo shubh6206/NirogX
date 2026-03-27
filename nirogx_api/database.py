@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, ForeignKey
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from datetime import datetime
 
 # SQLite database file will be created in your project root
 SQLALCHEMY_DATABASE_URL = "sqlite:///./nirogx.db"
@@ -45,3 +46,12 @@ class DBSleepSession(Base):
     duration_minutes = Column(Integer)
     start_time = Column(DateTime, index=True)
     end_time = Column(DateTime)
+
+class DBChatMessage(Base):
+    __tablename__ = "chat_messages"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), default=1, index=True)
+    session_id = Column(String, index=True) # Groups messages into specific conversations
+    role = Column(String) # Will be either "user" or "model"
+    text = Column(String)
+    timestamp = Column(DateTime, default=datetime.utcnow)

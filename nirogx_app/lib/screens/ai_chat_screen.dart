@@ -27,9 +27,13 @@ class _AiChatScreenState extends State<AiChatScreen> {
   XFile? _selectedImage;
   final ApiService _apiService = ApiService();
 
+  String _currentSessionId = DateTime.now().millisecondsSinceEpoch.toString(); 
+  Map<String, dynamic> _pastSessions = {};
+
   @override
   void initState() {
     super.initState();
+    _loadHistory();
     // If a message was passed in when the screen first loads, send it!
     if (widget.initialMessage != null && widget.initialMessage!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -37,6 +41,30 @@ class _AiChatScreenState extends State<AiChatScreen> {
         _sendMessage();
       });
     }
+  }
+
+  Future<void> _loadHistory() async {
+    final history = await _apiService.fetchChatHistory();
+    setState(() {
+      _pastSessions = history;
+    });
+  }
+
+  // Helper to load a specific past chat into the UI
+  void _loadSession(String sessionId, List<dynamic> messages) {
+    setState(() {
+      _currentSessionId = sessionId;
+      _messages.clear();
+      for (var msg in messages) {
+        _messages.add({
+          'sender': msg['role'] == 'user' ? 'user' : 'bot',
+          'text': msg['text'],
+          'image': null,
+        });
+      }
+    });
+    Navigator.pop(context); // Close the drawer
+    _scrollToBottom();
   }
 
   @override
@@ -96,15 +124,6 @@ class _AiChatScreenState extends State<AiChatScreen> {
       imageFile = File(_selectedImage!.path);
     }
 
-    // --- NEW: Extract chat history before adding the new message ---
-    // We map our local _messages to a simple "role" and "text" format.
-    List<Map<String, String>> chatHistory = _messages.map((m) {
-      return {
-        "role": m['sender'] == 'user' ? "user" : "model",
-        "text": m['text'] as String,
-      };
-    }).toList();
-
     setState(() {
       // We store the File locally to render it in the chat bubble
       _messages.add({
@@ -120,12 +139,15 @@ class _AiChatScreenState extends State<AiChatScreen> {
     _textController.clear();
 
     try {
-      // Calls the secure Gemini integration with optional image and history
+      // Calls the secure Gemini integration with session ID and optional image
       final response = await _apiService.sendChatMessage(
         prompt, 
+        sessionId: _currentSessionId, 
         imageBytes: imageBytes,
-        history: chatHistory,
       );
+      
+      // Refresh history listing after each send (to catch the new one)
+      _loadHistory();
       
       if (!mounted) return;
 
@@ -160,10 +182,53 @@ class _AiChatScreenState extends State<AiChatScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
+      // NEW: Add the Drawer for history
+      drawer: Drawer(
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    const Icon(LucideIcons.history, color: nirogTeal),
+                    const SizedBox(width: 12),
+                    Text('Chat History', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+              const Divider(),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _pastSessions.keys.length,
+                  itemBuilder: (context, index) {
+                    // Reverse the keys to show newest first
+                    String sessionId = _pastSessions.keys.elementAt(_pastSessions.length - 1 - index);
+                    List<dynamic> sessionMsgs = _pastSessions[sessionId];
+                    
+                    // Use the first user message as the title
+                    String title = sessionMsgs.firstWhere(
+                      (m) => m['role'] == 'user', 
+                      orElse: () => {'text': 'New Chat'}
+                    )['text'];
+
+                    return ListTile(
+                      leading: const Icon(LucideIcons.messageSquare, color: Colors.grey),
+                      title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontSize: 14)),
+                      onTap: () => _loadSession(sessionId, sessionMsgs),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
         centerTitle: false,
+        // Hamburger menu icon will appear automatically
         title: Text(
           'NirogX AI Assistant',
           style: GoogleFonts.poppins(
@@ -173,6 +238,16 @@ class _AiChatScreenState extends State<AiChatScreen> {
           ),
         ),
         actions: [
+          // New Chat Button
+          IconButton(
+            icon: const Icon(LucideIcons.plusCircle, color: nirogTeal, size: 24),
+            onPressed: () {
+              setState(() {
+                _currentSessionId = DateTime.now().millisecondsSinceEpoch.toString();
+                _messages.clear();
+              });
+            },
+          ),
           IconButton(
             icon: const Icon(LucideIcons.trash2, color: Colors.grey, size: 20),
             onPressed: () => setState(() {

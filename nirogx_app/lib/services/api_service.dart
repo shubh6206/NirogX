@@ -28,9 +28,12 @@ class ApiService {
   // 1. FREE-FORM AI CHAT (Routed through FastAPI for RAG)
   // =========================================================================
   
-  // --- UPDATED: Added history parameter ---
-  Future<String> sendChatMessage(String prompt, {Uint8List? imageBytes, List<Map<String, String>> history = const []}) async {
+  // UPDATED: Now requires a sessionId (made optional for compatibility)
+  Future<String> sendChatMessage(String prompt, {String? sessionId, Uint8List? imageBytes}) async {
     final uri = Uri.parse('$_baseUrl/chat');
+
+    // If a screen didn't provide a sessionId, auto-generate a unique timestamp-based one
+    final String effectiveSessionId = sessionId ?? DateTime.now().millisecondsSinceEpoch.toString();
 
     try {
       var request = http.MultipartRequest('POST', uri);
@@ -38,9 +41,7 @@ class ApiService {
       // Add text fields
       request.fields['prompt'] = prompt;
       request.fields['user_id'] = '1'; // Hardcoded for testing
-
-      // --- NEW: Attach the JSON encoded history ---
-      request.fields['history'] = jsonEncode(history);
+      request.fields['session_id'] = effectiveSessionId; 
 
       // Add image if attached
       if (imageBytes != null) {
@@ -64,6 +65,21 @@ class ApiService {
       }
     } catch (e) {
       return "AI Connection Error: Please check if your FastAPI server is running. Details: $e";
+    }
+  }
+
+  // NEW: Fetch past chats
+  Future<Map<String, dynamic>> fetchChatHistory() async {
+    final uri = Uri.parse('$_baseUrl/chat/history/1'); // Hardcoded user_id 1
+    try {
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body)['sessions'];
+      }
+      return {};
+    } catch (e) {
+      debugPrint("Error fetching history: $e");
+      return {};
     }
   }
 
