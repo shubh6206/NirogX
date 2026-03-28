@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import 'package:nirogx_app/providers/auth_provider.dart';
 import 'package:nirogx_app/services/api_service.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -66,7 +68,10 @@ class _SignupScreenState extends State<SignupScreen> {
 
         ApiService().setToken(token);
 
-        context.go('/');
+        // 1. Tell the AuthProvider to update its state
+        await context.read<AuthProvider>().reloadAuthStatus();
+
+        // 2. GoRouter will automatically redirect based on AuthProvider's state.
       } else {
         // Show backend error (e.g., "Email already registered")
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message']), backgroundColor: Colors.redAccent));

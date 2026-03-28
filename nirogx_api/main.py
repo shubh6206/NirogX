@@ -7,11 +7,13 @@ import google.generativeai as genai
 import logging
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
-from fastapi import FastAPI, HTTPException, Depends, File, Form, UploadFile
+from fastapi import FastAPI, HTTPException, Depends, File, Form, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
 from typing import Optional
 from sqlalchemy.orm import Session
+from jwt.exceptions import PyJWTError
 from database import engine, Base, SessionLocal, DBVital, DBBloodPressure, DBSleepSession, DBUser, DBChatMessage, DBMedicalHistory, DBUserGoal
 
 # Load environment variables from .env file
@@ -30,17 +32,14 @@ from pydantic import BaseModel
 
 # --- 1. Pydantic Schemas for incoming manual data ---
 class ManualVitalPayload(BaseModel):
-    user_id: int = 1
     type: str
     value: float
     unit: str
 
 class MedicalHistoryPayload(BaseModel):
-    user_id: int = 1
     condition: str
 
 class UserGoalPayload(BaseModel):
-    user_id: int = 1
     goal_type: str
     target_value: float
 
@@ -58,6 +57,32 @@ class UserLogin(BaseModel):
 SECRET_KEY = "your-super-secret-jwt-key" # Change this in production!
 ALGORITHM = "HS256"
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# This tells FastAPI where clients can get a token (useful for Swagger UI Docs)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+def get_current_user(token: str = Depends(oauth2_scheme)) -> int:
+    """
+    Automatically intercepts the JWT token from the request header, 
+    decodes it, and returns the active user's ID.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials or token expired.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        # Decode the token using the exact same secret key
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id_str: str = payload.get("sub") # We saved the ID in the 'sub' field
+        
+        if user_id_str is None:
+            raise credentials_exception
+            
+        return int(user_id_str)
+        
+    except PyJWTError:
+        raise credentials_exception
 
 # Import Core Logic Services
 from medical_ai_service import MedicalAIService
@@ -200,7 +225,8 @@ async def calculate_health_score_endpoint(
 @app.post("/api/vitals/sync", tags=["Sync"])
 async def sync_vitals_endpoint(
     payload: HealthSyncPayload,
-    db: Session = Depends(get_db) # Inject the DB session
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user)
 ):
     """
     Receives synchronized health data from Flutter and stores it in SQLite.
@@ -208,18 +234,10 @@ async def sync_vitals_endpoint(
     logger.info(f"Received health sync payload from {payload.device_os} at {payload.sync_timestamp}")
     
     try:
-        # Note: In a production app, you would extract the user_id from a JWT token here.
-        # For now, we are ensuring a dummy user exists for testing.
-        test_user = db.query(DBUser).filter(DBUser.id == 1).first()
-        if not test_user:
-            test_user = DBUser(id=1, email="test@nirogx.com")
-            db.add(test_user)
-            db.commit()
-
         # 1. Prepare Standard Vitals
         db_vitals = [
             DBVital(
-                user_id=1,
+                user_id=user_id,
                 type=vital.type,
                 value=vital.value,
                 unit=vital.unit,
@@ -230,7 +248,7 @@ async def sync_vitals_endpoint(
         # 2. Prepare Blood Pressure
         db_bp = [
             DBBloodPressure(
-                user_id=1,
+                user_id=user_id,
                 systolic=bp.systolic,
                 diastolic=bp.diastolic,
                 recorded_at=bp.recorded_at.replace(tzinfo=None)
@@ -240,7 +258,7 @@ async def sync_vitals_endpoint(
         # 3. Prepare Sleep Sessions
         db_sleep = [
             DBSleepSession(
-                user_id=1,
+                user_id=user_id,
                 stage=sleep.stage,
                 duration_minutes=sleep.duration_minutes,
                 start_time=sleep.start_time.replace(tzinfo=None),
@@ -269,27 +287,27 @@ async def sync_vitals_endpoint(
         raise HTTPException(status_code=500, detail="Internal server error during data sync.")
 
 @app.post("/api/v1/profile/medical-history", tags=["Profile"])
-async def add_medical_history(payload: MedicalHistoryPayload, db: Session = Depends(get_db)):
-    new_condition = DBMedicalHistory(user_id=payload.user_id, condition=payload.condition)
+async def add_medical_history(payload: MedicalHistoryPayload, db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
+    new_condition = DBMedicalHistory(user_id=user_id, condition=payload.condition)
     db.add(new_condition)
     db.commit()
     return {"status": "success", "message": "Medical history added."}
 
 @app.post("/api/v1/profile/goals", tags=["Profile"])
-async def update_user_goal(payload: UserGoalPayload, db: Session = Depends(get_db)):
+async def update_user_goal(payload: UserGoalPayload, db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
     # Check if goal exists to update, or create new
-    existing_goal = db.query(DBUserGoal).filter(DBUserGoal.user_id == payload.user_id, DBUserGoal.goal_type == payload.goal_type).first()
+    existing_goal = db.query(DBUserGoal).filter(DBUserGoal.user_id == user_id, DBUserGoal.goal_type == payload.goal_type).first()
     if existing_goal:
         existing_goal.target_value = payload.target_value
     else:
-        new_goal = DBUserGoal(user_id=payload.user_id, goal_type=payload.goal_type, target_value=payload.target_value)
+        new_goal = DBUserGoal(user_id=user_id, goal_type=payload.goal_type, target_value=payload.target_value)
         db.add(new_goal)
     db.commit()
     return {"status": "success"}
 
 @app.post("/api/v1/vitals/manual", tags=["Vitals"])
-async def log_manual_vital(payload: ManualVitalPayload, db: Session = Depends(get_db)):
-    new_vital = DBVital(user_id=payload.user_id, type=payload.type, value=payload.value, unit=payload.unit, recorded_at=datetime.utcnow())
+async def log_manual_vital(payload: ManualVitalPayload, db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
+    new_vital = DBVital(user_id=user_id, type=payload.type, value=payload.value, unit=payload.unit, recorded_at=datetime.utcnow())
     db.add(new_vital)
     db.commit()
     return {"status": "success"}
@@ -297,10 +315,10 @@ async def log_manual_vital(payload: ManualVitalPayload, db: Session = Depends(ge
 @app.post("/api/v1/chat", tags=["AI Chat"])
 async def chat_endpoint(
     prompt: str = Form(...),
-    user_id: int = Form(...),
     session_id: str = Form(...), # <-- NEW: We use this instead of the raw history array
     image: Optional[UploadFile] = File(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user)
 ):
     """
     RAG-enabled AI Chat with Database-Backed long-term memory.
@@ -384,8 +402,13 @@ ACTIVE HEALTH GOALS: {goals_text}
         logger.error(f"Chat Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to generate AI response.")
 
-@app.get("/api/v1/chat/history/{user_id}", tags=["AI Chat"])
-async def get_chat_history(user_id: int, db: Session = Depends(get_db)):
+@app.get("/api/v1/vitals", tags=["Vitals"])
+async def get_vitals(db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
+    vitals = db.query(DBVital).filter(DBVital.user_id == user_id).order_by(DBVital.recorded_at.desc()).all()
+    return {"status": "success", "data": vitals}
+
+@app.get("/api/v1/chat/history", tags=["AI Chat"])
+async def get_chat_history(db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
     """Fetches all unique chat sessions for a user, grouped by session_id"""
     try:
         messages = db.query(DBChatMessage).filter(DBChatMessage.user_id == user_id).order_by(DBChatMessage.timestamp.asc()).all()
@@ -406,8 +429,8 @@ async def get_chat_history(user_id: int, db: Session = Depends(get_db)):
         logger.error(f"History Fetch Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch chat history.")
 
-@app.get("/api/v1/action-plan/{user_id}", tags=["AI Coach"])
-async def get_action_plan(user_id: int, db: Session = Depends(get_db)):
+@app.get("/api/v1/action-plan", tags=["AI Coach"])
+async def get_action_plan(db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
     """
     Analyzes user vitals and chat history to generate 3 personalized daily goals.
     """

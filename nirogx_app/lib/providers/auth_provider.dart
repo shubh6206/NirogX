@@ -37,4 +37,11 @@ class AuthProvider extends ChangeNotifier {
     _isDemoMode = false;
     notifyListeners(); // Tells the router to kick them to the login screen
   }
+
+  // Refresh state from storage (called after a successful login/signup)
+  Future<void> reloadAuthStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    notifyListeners(); // This automatically triggers GoRouter to redirect!
+  }
 }

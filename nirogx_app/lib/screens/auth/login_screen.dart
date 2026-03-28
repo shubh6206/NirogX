@@ -61,7 +61,12 @@ class _LoginScreenState extends State<LoginScreen> {
         // Inject token into ApiService for future requests
         ApiService().setToken(token);
 
-        context.go('/'); // Route to Home Screen
+        // 1. Tell the AuthProvider to update its state
+        await context.read<AuthProvider>().reloadAuthStatus();
+        
+        // 2. You actually don't even need context.go('/') anymore!
+        // Because AppRouter has `refreshListenable: authProvider`, calling
+        // reloadAuthStatus() will make GoRouter automatically redirect.
       } else {
         // Show actual backend error (e.g., "Invalid email or password")
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message']), backgroundColor: Colors.redAccent));

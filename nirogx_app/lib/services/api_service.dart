@@ -89,14 +89,11 @@ class ApiService {
     try {
       var request = http.MultipartRequest('POST', uri);
       
-      // Add Authorization header if token exists
-      if (_jwtToken != null) {
-        request.headers['Authorization'] = 'Bearer $_jwtToken';
-      }
+      // --- CRITICAL: Add the Auth Token Header to the Multipart Request ---
+      request.headers.addAll(_authHeaders);
       
       // Add text fields
       request.fields['prompt'] = prompt;
-      request.fields['user_id'] = '1'; // Hardcoded for testing
       request.fields['session_id'] = effectiveSessionId; 
 
       // Add image if attached
@@ -126,7 +123,7 @@ class ApiService {
 
   // NEW: Fetch past chats
   Future<Map<String, dynamic>> fetchChatHistory() async {
-    final uri = Uri.parse('$_baseUrl/chat/history/1'); // Hardcoded user_id 1
+    final uri = Uri.parse('$_baseUrl/chat/history'); // Secure: user_id is extracted from JWT on backend
     try {
       final response = await http.get(uri, headers: _authHeaders);
       if (response.statusCode == 200) {
@@ -203,7 +200,7 @@ class ApiService {
       final response = await http.post(
         url,
         headers: _authHeaders,
-        body: jsonEncode({"user_id": 1, "condition": condition}),
+        body: jsonEncode({"condition": condition}), // user_id extracted from JWT on backend
       );
       return response.statusCode == 200;
     } catch (e) {
@@ -218,7 +215,7 @@ class ApiService {
       final response = await http.post(
         url,
         headers: _authHeaders,
-        body: jsonEncode({"user_id": 1, "goal_type": goalType, "target_value": targetValue}),
+        body: jsonEncode({"goal_type": goalType, "target_value": targetValue}), // user_id extracted from JWT on backend
       );
       return response.statusCode == 200;
     } catch (e) {
@@ -233,7 +230,7 @@ class ApiService {
       final response = await http.post(
         url,
         headers: _authHeaders,
-        body: jsonEncode({"user_id": 1, "type": type, "value": value, "unit": unit}),
+        body: jsonEncode({"type": type, "value": value, "unit": unit}), // user_id extracted from JWT on backend
       );
       return response.statusCode == 200;
     } catch (e) {
