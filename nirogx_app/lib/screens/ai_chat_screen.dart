@@ -228,7 +228,18 @@ class _AiChatScreenState extends State<AiChatScreen> {
         elevation: 0,
         backgroundColor: Colors.white,
         centerTitle: false,
-        // Hamburger menu icon will appear automatically
+        // NEW: Show back button if we can pop, otherwise show menu
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: const Icon(LucideIcons.arrowLeft, color: Colors.black),
+                onPressed: () => Navigator.pop(context),
+              )
+            : Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(LucideIcons.menu, color: Colors.black),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              ),
         title: Text(
           'NirogX AI Assistant',
           style: GoogleFonts.poppins(

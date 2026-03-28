@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from typing import Optional
 from sqlalchemy.orm import Session
-from database import engine, Base, SessionLocal, DBVital, DBBloodPressure, DBSleepSession, DBUser, DBChatMessage
+from database import engine, Base, SessionLocal, DBVital, DBBloodPressure, DBSleepSession, DBUser, DBChatMessage, DBMedicalHistory, DBUserGoal
 
 # Load environment variables from .env file
 load_dotenv()
@@ -22,6 +22,24 @@ from models import (
     HealthScore,
     HealthSyncPayload,
 )
+
+from pydantic import BaseModel
+
+# --- 1. Pydantic Schemas for incoming manual data ---
+class ManualVitalPayload(BaseModel):
+    user_id: int = 1
+    type: str
+    value: float
+    unit: str
+
+class MedicalHistoryPayload(BaseModel):
+    user_id: int = 1
+    condition: str
+
+class UserGoalPayload(BaseModel):
+    user_id: int = 1
+    goal_type: str
+    target_value: float
 
 # Import Core Logic Services
 from medical_ai_service import MedicalAIService
@@ -198,6 +216,32 @@ async def sync_vitals_endpoint(
         logger.error(f"Error processing health sync: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error during data sync.")
 
+@app.post("/api/v1/profile/medical-history", tags=["Profile"])
+async def add_medical_history(payload: MedicalHistoryPayload, db: Session = Depends(get_db)):
+    new_condition = DBMedicalHistory(user_id=payload.user_id, condition=payload.condition)
+    db.add(new_condition)
+    db.commit()
+    return {"status": "success", "message": "Medical history added."}
+
+@app.post("/api/v1/profile/goals", tags=["Profile"])
+async def update_user_goal(payload: UserGoalPayload, db: Session = Depends(get_db)):
+    # Check if goal exists to update, or create new
+    existing_goal = db.query(DBUserGoal).filter(DBUserGoal.user_id == payload.user_id, DBUserGoal.goal_type == payload.goal_type).first()
+    if existing_goal:
+        existing_goal.target_value = payload.target_value
+    else:
+        new_goal = DBUserGoal(user_id=payload.user_id, goal_type=payload.goal_type, target_value=payload.target_value)
+        db.add(new_goal)
+    db.commit()
+    return {"status": "success"}
+
+@app.post("/api/v1/vitals/manual", tags=["Vitals"])
+async def log_manual_vital(payload: ManualVitalPayload, db: Session = Depends(get_db)):
+    new_vital = DBVital(user_id=payload.user_id, type=payload.type, value=payload.value, unit=payload.unit, recorded_at=datetime.utcnow())
+    db.add(new_vital)
+    db.commit()
+    return {"status": "success"}
+
 @app.post("/api/v1/chat", tags=["AI Chat"])
 async def chat_endpoint(
     prompt: str = Form(...),
@@ -229,12 +273,25 @@ async def chat_endpoint(
                 gemini_history.append({"role": msg.role, "parts": [msg.text]})
 
         # 3. AUGMENTATION: Get context from SQLite (RAG)
+        # Get Vitals
         recent_vitals = db.query(DBVital).filter(DBVital.user_id == user_id).order_by(DBVital.recorded_at.desc()).limit(5).all()
-        if recent_vitals:
-            vitals_text = "\n".join([f"- {v.type}: {v.value} {v.unit} (recorded at {v.recorded_at})" for v in recent_vitals])
-            context_block = f"\n\n[SYSTEM CONTEXT - DO NOT MENTION UNLESS RELEVANT]\nUSER's RECENT DATABASE VITALS:\n{vitals_text}"
-        else:
-            context_block = "\n\n[SYSTEM CONTEXT]\nUSER's RECENT DATABASE VITALS: No recent data synced."
+        vitals_text = "\n".join([f"- {v.type}: {v.value} {v.unit} (recorded at {v.recorded_at})" for v in recent_vitals]) if recent_vitals else "None reported"
+        
+        # Get Medical History
+        med_history = db.query(DBMedicalHistory).filter(DBMedicalHistory.user_id == user_id).all()
+        med_text = ", ".join([m.condition for m in med_history]) if med_history else "None reported"
+
+        # Get Active Goals
+        goals = db.query(DBUserGoal).filter(DBUserGoal.user_id == user_id).all()
+        goals_text = ", ".join([f"{g.goal_type}: {g.target_value}" for g in goals]) if goals else "None set"
+
+        # Construct the Ultimate RAG Context Block
+        context_block = f"""
+\n\n[SYSTEM CONTEXT - USE THIS TO PERSONALIZE ANSWERS]
+USER VITALS: {vitals_text}
+KNOWN MEDICAL HISTORY: {med_text}
+ACTIVE HEALTH GOALS: {goals_text}
+"""
 
         # 4. Initialize Gemini
         system_instruction = (
@@ -296,3 +353,53 @@ async def get_chat_history(user_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"History Fetch Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch chat history.")
+
+@app.get("/api/v1/action-plan/{user_id}", tags=["AI Coach"])
+async def get_action_plan(user_id: int, db: Session = Depends(get_db)):
+    """
+    Analyzes user vitals and chat history to generate 3 personalized daily goals.
+    """
+    try:
+        # 1. RETRIEVE context
+        recent_vitals = db.query(DBVital).filter(DBVital.user_id == user_id).order_by(DBVital.recorded_at.desc()).limit(10).all()
+        recent_chats = db.query(DBChatMessage).filter(DBChatMessage.user_id == user_id).order_by(DBChatMessage.timestamp.desc()).limit(5).all()
+        
+        vitals_ctx = ", ".join([f"{v.type}: {v.value}" for v in recent_vitals])
+        chat_ctx = " | ".join([f"{m.role}: {m.text[:50]}" for m in recent_chats])
+
+        # 2. PROMPT Gemini
+        prompt = f"""
+        Analyze this user's health context:
+        VITALS: {vitals_ctx}
+        RECENT CHAT: {chat_ctx}
+
+        Output a JSON array of EXACTLY 3 daily health goals.
+        Use these fields: id (string), title (short), unit, iconName (droplets, moon, footprints, or pill), 
+        color (hex string), currentValue (0), targetValue (number), isManual (boolean).
+        Target values should be realistic. If hydration is needed, use 'L' and target 2.5.
+        
+        Output ONLY the JSON array. No other text.
+        """
+
+        apiKey = os.environ.get("GEMINI_API_KEY") 
+        genai.configure(api_key=apiKey)
+        model = genai.GenerativeModel("gemini-1.5-flash") # Use 1.5 flash for speed/JSON consistency
+        
+        response = model.generate_content(prompt)
+        
+        # Simple cleanup if Gemini adds markdown blocks
+        clean_json = response.text.replace("```json", "").replace("```", "").strip()
+        goals = json.loads(clean_json)
+
+        return {"status": "success", "goals": goals}
+
+    except Exception as e:
+        # Fallback to default goals if AI fails
+        return {
+            "status": "fallback",
+            "goals": [
+                {"id": "f1", "title": "Hydration", "unit": "L", "iconName": "droplets", "color": "0xFF2196F3", "currentValue": 0.0, "targetValue": 2.0, "isManual": True},
+                {"id": "f2", "title": "Daily Walk", "unit": "mins", "iconName": "footprints", "color": "0xFF4CAF50", "currentValue": 0.0, "targetValue": 30.0, "isManual": False},
+                {"id": "f3", "title": "Sleep Prep", "unit": "Sessions", "iconName": "moon", "color": "0xFF3F51B5", "currentValue": 0.0, "targetValue": 1.0, "isManual": True}
+            ]
+        }

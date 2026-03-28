@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nirogx_app/models/action_goal.dart';
 
 import 'package:nirogx_app/providers/symptom_provider.dart';
 import 'package:nirogx_app/health_score_view.dart'; // Ensure this exists or remove the route
@@ -21,28 +22,68 @@ class _HomeScreenState extends State<HomeScreen> {
   String _userName = "User";
   String? _profilePhotoPath;
 
-  // --- Habit Tracking State ---
-  int _waterGlasses = 6; // 1 glass = 0.2L. 6 glasses = 1.2L. Target = 10 (2.0L)
-  bool _windDownCompleted = false;
-  int _activeMinutes = 25; // Target = 30 mins
+  bool _isLoading = true;
+  double _liveScore = 0.0;
+  List<ActionGoal> _dailyGoals = [];
 
   // Helper to calculate how many goals are fully completed
-  int get _completedHabitsCount {
-    int count = 0;
-    if (_waterGlasses >= 10) count++;
-    if (_windDownCompleted) count++;
-    if (_activeMinutes >= 30) count++;
-    return count;
-  }
+  int get _completedHabitsCount => _dailyGoals.where((g) => g.isCompleted).length;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _loadDataAndStartStream();
     // Fetch the latest database logs the moment the Home Screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<SymptomProvider>().loadSymptomLogs();
     });
+  }
+
+  Future<void> _loadDataAndStartStream() async {
+    // Simulate fetching the personalized goals from your FastAPI backend
+    await Future.delayed(const Duration(milliseconds: 800));
+    
+    if (mounted) {
+      setState(() {
+        _liveScore = 92.0; 
+        
+        // This list would come from your backend based on AI analysis!
+        _dailyGoals = [
+          ActionGoal(
+            id: 'g1',
+            title: 'Hydration Recovery',
+            unit: 'L',
+            iconName: 'droplets',
+            color: Colors.blueAccent,
+            currentValue: 1.2,
+            targetValue: 2.5, // AI suggested more water due to recent high temp
+            isManual: true, // User must log this
+          ),
+          ActionGoal(
+            id: 'g2',
+            title: 'Wind Down Routine',
+            unit: 'Sessions',
+            iconName: 'moon',
+            color: Colors.indigoAccent,
+            currentValue: 1.0,
+            targetValue: 1.0,
+            isManual: true,
+          ),
+          ActionGoal(
+            id: 'g3',
+            title: 'Active Minutes',
+            unit: 'mins',
+            iconName: 'footprints',
+            color: Colors.greenAccent.shade700,
+            currentValue: 25.0,
+            targetValue: 30.0,
+            isManual: false, // Pulled automatically from Google Health Connect
+          ),
+        ];
+        _isLoading = false;
+      });
+    }
   }
 
   // Fetch the data saved from the Profile Screen
@@ -56,6 +97,89 @@ class _HomeScreenState extends State<HomeScreen> {
         
         _profilePhotoPath = prefs.getString('profilePhotoPath');
       });
+    }
+  }
+
+  void _showManualEntrySheet(ActionGoal goal) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10))),
+              const SizedBox(height: 20),
+              Text('Log ${goal.title}', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Minus Button
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        if (goal.currentValue > 0) goal.currentValue -= 0.5; // Adjust increment based on your needs
+                      });
+                      Navigator.pop(context);
+                      _showManualEntrySheet(goal); // Refresh sheet
+                    },
+                    icon: const Icon(LucideIcons.minusCircle, size: 40, color: Colors.grey),
+                  ),
+                  
+                  // Current Value Display
+                  Text(
+                    '${goal.currentValue.toStringAsFixed(1)}\n${goal.unit}', 
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: goal.color),
+                  ),
+                  
+                  // Plus Button
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        if (!goal.isCompleted) goal.currentValue += 0.5;
+                      });
+                      Navigator.pop(context);
+                      _showManualEntrySheet(goal); // Refresh sheet
+                    },
+                    icon: Icon(LucideIcons.plusCircle, size: 40, color: goal.color),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 30),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: goal.color,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Save Progress', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              )
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  IconData _getIconForName(String name) {
+    switch (name) {
+      case 'droplets': return LucideIcons.droplets;
+      case 'moon': return LucideIcons.moon;
+      case 'footprints': return LucideIcons.footprints;
+      case 'pill': return LucideIcons.pill;
+      default: return LucideIcons.activity;
     }
   }
 
@@ -104,66 +228,45 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildHealthScoreCard(context, healthScore),
                   const SizedBox(height: 30),
 
-                  // --- Interactive Daily Action Plan ---
+                  // --- Dynamic Action Plan ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Today\'s Action Plan', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
-                      Text('$_completedHabitsCount/3 Done', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: brandTeal)),
+                      Text('$_completedHabitsCount/${_dailyGoals.length} Done', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: brandTeal)),
                     ],
                   ),
                   const SizedBox(height: 12),
                   
-                  // 1. Hydration Goal (Tap to add 0.2L)
-                  _buildActionCard(
-                    icon: LucideIcons.droplets,
-                    title: 'Hydration Goal',
-                    subtitle: '${(_waterGlasses * 0.2).toStringAsFixed(1)}L / 2.0L completed',
-                    progress: (_waterGlasses / 10.0).clamp(0.0, 1.0),
-                    color: Colors.blueAccent,
-                    isCompleted: _waterGlasses >= 10,
-                    onTap: () {
-                      setState(() {
-                        if (_waterGlasses < 10) {
-                          _waterGlasses++;
-                        }
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  // 2. Wind Down Routine (Tap to toggle complete/incomplete)
-                  _buildActionCard(
-                    icon: LucideIcons.moon,
-                    title: 'Wind Down Routine',
-                    subtitle: _windDownCompleted ? 'Great job!' : 'No screens after 10 PM',
-                    progress: _windDownCompleted ? 1.0 : 0.0,
-                    color: Colors.indigoAccent,
-                    isCompleted: _windDownCompleted,
-                    onTap: () {
-                      setState(() {
-                        _windDownCompleted = !_windDownCompleted;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  // 3. Active Minutes (Tap to add 5 minutes of activity)
-                  _buildActionCard(
-                    icon: LucideIcons.footprints,
-                    title: 'Active Minutes',
-                    subtitle: '$_activeMinutes / 30 mins',
-                    progress: (_activeMinutes / 30.0).clamp(0.0, 1.0),
-                    color: Colors.greenAccent.shade700,
-                    isCompleted: _activeMinutes >= 30,
-                    onTap: () {
-                      setState(() {
-                        if (_activeMinutes < 30) {
-                          _activeMinutes += 5;
-                        }
-                      });
-                    },
-                  ),
+                  // Generate cards dynamically
+                  if (_isLoading)
+                    const Center(child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: CircularProgressIndicator(color: brandTeal),
+                    ))
+                  else
+                    ..._dailyGoals.map((goal) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12.0),
+                        child: _buildActionCard(
+                          icon: _getIconForName(goal.iconName),
+                          title: goal.title,
+                          subtitle: goal.subtitle,
+                          progress: goal.progress,
+                          color: goal.color,
+                          isCompleted: goal.isCompleted,
+                          onTap: () {
+                            if (goal.isManual) {
+                              _showManualEntrySheet(goal);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("${goal.title} updates automatically via Health Connect.")),
+                              );
+                            }
+                          },
+                        ),
+                      );
+                    }),
                   const SizedBox(height: 30),
 
                   // 4. Recent AI Insight - NOW DYNAMIC

@@ -55,3 +55,18 @@ class DBChatMessage(Base):
     role = Column(String) # Will be either "user" or "model"
     text = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
+
+class DBUserGoal(Base):
+    __tablename__ = "user_goals"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), default=1, index=True)
+    goal_type = Column(String) # e.g., "Water Intake"
+    target_value = Column(Float)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+class DBMedicalHistory(Base):
+    __tablename__ = "medical_history"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), default=1, index=True)
+    condition = Column(String)
+    recorded_at = Column(DateTime, default=datetime.utcnow)

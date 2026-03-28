@@ -136,4 +136,53 @@ class ApiService {
       throw Exception('Network error: $e');
     }
   }
+
+  // =========================================================================
+  // 4. MANUAL PROFILE DATA (To FastAPI Backend)
+  // =========================================================================
+
+  Future<bool> addMedicalHistory(String condition) async {
+    final url = Uri.parse('$_baseUrl/profile/medical-history');
+    try {
+      final response = await http.post(
+        url,
+        headers: _headers,
+        body: jsonEncode({"user_id": 1, "condition": condition}),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint("Error adding medical history: $e");
+      return false;
+    }
+  }
+
+  Future<bool> updateGoal(String goalType, double targetValue) async {
+    final url = Uri.parse('$_baseUrl/profile/goals');
+    try {
+      final response = await http.post(
+        url,
+        headers: _headers,
+        body: jsonEncode({"user_id": 1, "goal_type": goalType, "target_value": targetValue}),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint("Error updating goal: $e");
+      return false;
+    }
+  }
+
+  Future<bool> logManualVital(String type, double value, String unit) async {
+    final url = Uri.parse('$_baseUrl/vitals/manual');
+    try {
+      final response = await http.post(
+        url,
+        headers: _headers,
+        body: jsonEncode({"user_id": 1, "type": type, "value": value, "unit": unit}),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint("Error logging vital: $e");
+      return false;
+    }
+  }
 }
