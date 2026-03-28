@@ -1,9 +1,12 @@
 import io
 import os
 import json
+import jwt
 import PIL.Image
 import google.generativeai as genai
 import logging
+from passlib.context import CryptContext
+from datetime import datetime, timedelta
 from fastapi import FastAPI, HTTPException, Depends, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -40,6 +43,21 @@ class UserGoalPayload(BaseModel):
     user_id: int = 1
     goal_type: str
     target_value: float
+
+# --- Auth Pydantic Models ---
+class UserSignup(BaseModel):
+    name: str
+    email: str
+    password: str
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+# --- Security Config ---
+SECRET_KEY = "your-super-secret-jwt-key" # Change this in production!
+ALGORITHM = "HS256"
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Import Core Logic Services
 from medical_ai_service import MedicalAIService
@@ -85,6 +103,40 @@ def get_health_score_calculator():
     return HealthScoreCalculator()
 
 # --- Endpoints ---
+
+# --- Auth Endpoints ---
+@app.post("/api/v1/auth/signup", tags=["Auth"])
+async def signup(user: UserSignup, db: Session = Depends(get_db)):
+    # Check if user exists
+    existing_user = db.query(DBUser).filter(DBUser.email == user.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Hash password and save
+    hashed_pw = pwd_context.hash(user.password)
+    new_user = DBUser(name=user.name, email=user.email, hashed_password=hashed_pw)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    # Generate Token
+    token_data = {"sub": str(new_user.id), "exp": datetime.utcnow() + timedelta(days=30)}
+    token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
+    
+    return {"token": token, "user_id": new_user.id, "name": new_user.name}
+
+@app.post("/api/v1/auth/login", tags=["Auth"])
+async def login(user: UserLogin, db: Session = Depends(get_db)):
+    db_user = db.query(DBUser).filter(DBUser.email == user.email).first()
+    
+    if not db_user or not pwd_context.verify(user.password, db_user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # Generate Token
+    token_data = {"sub": str(db_user.id), "exp": datetime.utcnow() + timedelta(days=30)}
+    token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
+    
+    return {"token": token, "user_id": db_user.id, "name": db_user.name}
 
 @app.get("/", tags=["System"])
 async def read_root():

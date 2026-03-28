@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nirogx_app/services/api_service.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -30,35 +31,46 @@ class _SignupScreenState extends State<SignupScreen> {
 
   // Handle Local Signup & Auto-Login
   Future<void> _handleSignup() async {
-    // Basic validation
     if (_nameController.text.isEmpty || _emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill in all fields.')));
       return;
     }
-
     if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Passwords do not match.')));
       return;
     }
 
     setState(() => _isLoading = true);
 
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 1));
-
-    // Store login state and user details locally
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', true);
-    await prefs.setString('userName', _nameController.text.trim());
-    await prefs.setString('userEmail', _emailController.text.trim());
+    // Call FastAPI Backend
+    final result = await ApiService().signup(
+      _nameController.text.trim(),
+      _emailController.text.trim(),
+      _passwordController.text,
+    );
 
     if (mounted) {
       setState(() => _isLoading = false);
-      context.go('/'); // Route straight to Home Screen after signing up
+
+      if (result['success']) {
+        final token = result['data']['token'];
+        final userName = result['data']['name'];
+        final userId = result['data']['user_id'];
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        await prefs.setString('jwt_token', token);
+        await prefs.setString('userName', userName);
+        await prefs.setString('userEmail', _emailController.text.trim());
+        await prefs.setInt('user_id', userId);
+
+        ApiService().setToken(token);
+
+        context.go('/');
+      } else {
+        // Show backend error (e.g., "Email already registered")
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message']), backgroundColor: Colors.redAccent));
+      }
     }
   }
 

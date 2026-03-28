@@ -18,8 +18,9 @@ Base = declarative_base()
 class DBUser(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
     email = Column(String, unique=True, index=True)
-    # In a real app, you'd have hashed_password, etc.
+    hashed_password = Column(String)
 
 class DBVital(Base):
     __tablename__ = "vitals"

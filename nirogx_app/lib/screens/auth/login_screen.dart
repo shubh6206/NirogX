@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:nirogx_app/providers/auth_provider.dart';
+import 'package:nirogx_app/services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -27,27 +28,44 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Handle Local Login
   Future<void> _handleLogin() async {
-    // Basic validation
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter both email and password.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter both email and password.')));
       return;
     }
 
     setState(() => _isLoading = true);
 
-    // Simulate a brief network/processing delay
-    await Future.delayed(const Duration(seconds: 1));
-
-    // Store login state locally so the user stays logged in
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', true);
-    await prefs.setString('userEmail', _emailController.text.trim());
+    // Call the FastAPI Backend
+    final result = await ApiService().login(
+      _emailController.text.trim(),
+      _passwordController.text,
+    );
 
     if (mounted) {
       setState(() => _isLoading = false);
-      context.go('/'); // Route to Home Screen
+
+      if (result['success']) {
+        // Extract data from backend
+        final token = result['data']['token'];
+        final userName = result['data']['name'];
+        final userId = result['data']['user_id'];
+
+        // Save locally
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        await prefs.setString('jwt_token', token);
+        await prefs.setString('userName', userName);
+        await prefs.setString('userEmail', _emailController.text.trim());
+        await prefs.setInt('user_id', userId);
+
+        // Inject token into ApiService for future requests
+        ApiService().setToken(token);
+
+        context.go('/'); // Route to Home Screen
+      } else {
+        // Show actual backend error (e.g., "Invalid email or password")
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message']), backgroundColor: Colors.redAccent));
+      }
     }
   }
 
