@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Nirogx App</string>
+	<string>NirogX Clinical AI</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>nirogx_app</string>
+	<string>nirogx_mobile</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -34,16 +34,26 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<!-- Apple HealthKit Permissions & Usage Descriptions -->
+	<key>NSHealthShareUsageDescription</key>
+	<string>NirogX reads your health data (heart rate, sleep stages, daily steps, oxygen saturation, hydration, and active energy) to securely compute your personalized daily Health Score and wellness baselines.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>NirogX logs synchronized wellness metrics and manual health logs to your Apple Health repository when authorized.</string>
+	<key>NSHealthClinicalHealthRecordsShareUsageDescription</key>
+	<string>NirogX reads authorized clinical records to correlate laboratory biomarkers with your daily physiological trends.</string>
+
+	<!-- Background Modes for HealthKit background delivery -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+	</array>
 </dict>
 </plist>

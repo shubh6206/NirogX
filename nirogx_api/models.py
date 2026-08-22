@@ -1,113 +1,94 @@
-from enum import Enum
-from pydantic import BaseModel, Field
-from typing import List, Optional
+from pydantic import BaseModel, EmailStr, Field
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 
-# -------------------------------------------------------------------
-# Enums for strict validation
-# -------------------------------------------------------------------
-class ActivityLevelEnum(str, Enum):
-    sedentary = "sedentary"
-    light = "light"
-    moderate = "moderate"
-    active = "active"
-    very_active = "very_active"
+class UserBase(BaseModel):
+    email: EmailStr
+    name: str
+    age: int = 28
+    gender: str = "Male"
+    height: float = 175.0
+    weight: float = 70.0
 
-# -------------------------------------------------------------------
-# Request Payloads
-# -------------------------------------------------------------------
-class SymptomPayload(BaseModel):
-    # Using text for NLP-based AI processing
-    text: str = Field(
-        ..., 
-        min_length=3,
-        description="Natural language description of the symptoms.",
-        json_schema_extra={"example": "I have been experiencing a sharp chest pain and shortness of breath."}
-    )
-    duration: str = Field(
-        ..., 
-        description="How long the symptoms have been present.",
-        json_schema_extra={"example": "2 days"}
-    )
-    # Adding an optional user_id is good practice for saving to a database later
-    user_id: Optional[str] = Field(
-        None, 
-        description="Optional unique identifier for the user."
-    )
+class UserCreate(UserBase):
+    password: str
 
-class UserVitalsPayload(BaseModel):
-    age: int = Field(..., gt=0, lt=120, description="User's age in years.")
-    bmi: float = Field(..., gt=10.0, lt=60.0, description="Body Mass Index.")
-    heart_rate: int = Field(..., gt=30, lt=220, description="Resting heart rate in BPM.")
-    sleep_hours: float = Field(..., ge=0.0, le=24.0, description="Average hours of sleep per night.")
-    activity_level: ActivityLevelEnum = Field(
-        ..., 
-        description="Standardized activity level."
-    )
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
 
-# -------------------------------------------------------------------
-# Response Models
-# -------------------------------------------------------------------
-class ClinicalAssessment(BaseModel):
-    assessment: str = Field(
-        ..., 
-        description="The AI-generated clinical assessment text."
-    )
-    # Added red_flags so the Flutter app can highlight urgent issues in the UI
-    red_flags: List[str] = Field(
-        default_factory=list,
-        description="List of critical warnings requiring immediate attention."
-    )
-    confidence_score: float = Field(
-        default=0.0, 
-        ge=0.0, le=1.0, 
-        description="AI confidence level from 0.0 to 1.0."
-    )
+class UserResponse(UserBase):
+    id: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
-class HealthScore(BaseModel):
-    score: float = Field(
-        ..., 
-        ge=0.0, le=100.0, 
-        description="Calculated health score out of 100."
-    )
-    # Added a status category to make it easier to display colored rings (Green/Yellow/Red) in Flutter
-    status: str = Field(
-        default="unknown",
-        description="Categorized status (e.g., 'Optimal', 'Caution', 'Critical')."
-    )
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
 
-# -------------------------------------------------------------------
-# Database / History Models
-# -------------------------------------------------------------------
-class AnalysisHistory(BaseModel):
-    record_id: str = Field(..., description="Unique ID for this specific analysis record.")
-    timestamp: str = Field(..., description="ISO 8601 timestamp of when the analysis occurred.")
-    symptom_payload: SymptomPayload
-    clinical_assessment: ClinicalAssessment
-
-# -------------------------------------------------------------------
-# Health Sync Models
-# -------------------------------------------------------------------
-class VitalPoint(BaseModel):
-    type: str
+class VitalLog(BaseModel):
+    type: str  # heart_rate, SpO2, blood_pressure, sleep, steps, active_calories
     value: float
+    value_secondary: Optional[float] = None
     unit: str
-    recorded_at: datetime
+    source: str = "Manual Entry"
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
 
-class BloodPressurePoint(BaseModel):
-    systolic: float
-    diastolic: float
-    recorded_at: datetime
+class BloodPressureLog(BaseModel):
+    systolic: int
+    diastolic: int
+    pulse: Optional[int] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
 
-class SleepSession(BaseModel):
-    stage: str
-    duration_minutes: int
-    start_time: datetime
-    end_time: datetime
+class VitalsPayload(BaseModel):
+    age: int = 28
+    bmi: float = 22.9
+    heart_rate: int = 68
+    sleep_hours: float = 7.6
+    activity_level: str = "moderate"  # sedentary, light, moderate, active, very_active
+    hydration_liters: Optional[float] = 1.75
+    systolic_bp: Optional[int] = 118
+    diastolic_bp: Optional[int] = 78
 
-class HealthSyncPayload(BaseModel):
-    sync_timestamp: datetime
-    device_os: str
-    vitals: List[VitalPoint]
-    blood_pressure: List[BloodPressurePoint]
-    sleep_sessions: List[SleepSession]
+class HealthScoreComponent(BaseModel):
+    score: float
+    rawWeight: float
+    normalizedWeight: float
+    isAvailable: bool = True
+    label: str
+    currentDisplay: str
+    benchmarkDisplay: str
+    status: str
+
+class HealthScoreResult(BaseModel):
+    score: float
+    status: str
+    evaluatedCategories: int
+    totalCategories: int
+    components: Dict[str, HealthScoreComponent]
+    helpingFactors: List[str]
+    improvementOpportunities: List[str]
+    explanation: str
+    changeDelta: Optional[float] = 0.0
+    calculatedAt: datetime = Field(default_factory=datetime.utcnow)
+
+class SymptomAnalysisRequest(BaseModel):
+    symptoms: str
+    patient_context: Optional[Dict[str, Any]] = None
+    report_image_base64: Optional[str] = None
+
+class SymptomAnalysisResponse(BaseModel):
+    differential_diagnosis: List[str]
+    severity_level: str  # Low, Moderate, High, Critical
+    recommended_actions: List[str]
+    disclaimer: str
+    analyzed_at: datetime = Field(default_factory=datetime.utcnow)
+
+class ChatMessage(BaseModel):
+    role: str  # user, assistant, system
+    content: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+class ChatRequest(BaseModel):
+    messages: List[ChatMessage]
+    vitals_context: Optional[Dict[str, Any]] = None

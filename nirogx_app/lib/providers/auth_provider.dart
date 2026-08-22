@@ -1,47 +1,67 @@
-// lib/providers/auth_provider.dart
+import 'package:flutter/foundation.dart';
+import '../models/user_model.dart';
+import '../services/api_service.dart';
 
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+class AuthProvider with ChangeNotifier {
+  UserModel? _user = UserModel(
+    id: 'usr_default_001',
+    email: 'user@example.com',
+    name: 'Alex Mercer',
+    age: 28,
+    gender: 'Male',
+    height: 175.0,
+    weight: 70.0,
+  );
 
-class AuthProvider extends ChangeNotifier {
-  bool _isLoggedIn = false;
-  bool _isInitialized = false;
-  bool _isDemoMode = false;
+  bool _isAuthenticated = true;
+  bool _isLoading = false;
 
-  bool get isLoggedIn => _isLoggedIn;
-  bool get isInitialized => _isInitialized; // Prevents routing before storage is checked
-  bool get isDemoMode => _isDemoMode;
+  UserModel? get user => _user;
+  bool get isAuthenticated => _isAuthenticated;
+  bool get isLoading => _isLoading;
 
-  AuthProvider() {
-    _checkAuthStatus();
-  }
-
-  // Reads the device's local storage when the app opens
-  Future<void> _checkAuthStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-    _isInitialized = true;
-    notifyListeners(); // Tells the router to run its check
-  }
-
-  void setDemoMode(bool value) {
-    _isDemoMode = value;
+  Future<bool> login(String email, String password) async {
+    _isLoading = true;
     notifyListeners();
+    try {
+      final res = await ApiService.login(email, password);
+      if (res['user'] != null) {
+        _user = UserModel.fromJson(res['user']);
+        _isAuthenticated = true;
+      }
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 
-  // Call this when the user clicks "Log Out" on the profile screen
-  Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('isLoggedIn');
-    _isLoggedIn = false;
-    _isDemoMode = false;
-    notifyListeners(); // Tells the router to kick them to the login screen
+  Future<void> updateProfile({
+    required String name,
+    required int age,
+    required String gender,
+    required double height,
+    required double weight,
+  }) async {
+    if (_user != null) {
+      _user = _user!.copyWith(
+        name: name,
+        age: age,
+        gender: gender,
+        height: height,
+        weight: weight,
+      );
+      notifyListeners();
+    }
   }
 
-  // Refresh state from storage (called after a successful login/signup)
-  Future<void> reloadAuthStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-    notifyListeners(); // This automatically triggers GoRouter to redirect!
+  void logout() {
+    _user = null;
+    _isAuthenticated = false;
+    ApiService.setAuthToken(null);
+    notifyListeners();
   }
 }

@@ -1,241 +1,98 @@
-// lib/services/api_service.dart
-
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:http/http.dart' as http;
-import 'package:nirogx_app/models/symptom_log.dart';
-import 'package:nirogx_app/models/health_data.dart';
-
-import 'package:flutter/foundation.dart';
+import '../models/user_model.dart';
+import '../models/vital_model.dart';
+import '../models/health_score_model.dart';
 
 class ApiService {
-  static final ApiService _instance = ApiService._internal();
-  factory ApiService() => _instance;
+  // Configurable base URL: Android emulator uses 10.0.2.2, iOS uses localhost
+  static String baseUrl = 'http://10.0.2.2:3000/api';
+  static String? _authToken;
 
-  // Backend URL (10.0.2.2 for Android Emulator, localhost for others)
-  static String get _baseUrl => 
-      (defaultTargetPlatform == TargetPlatform.android && !kIsWeb)
-          ? 'http://10.0.2.2:8000/api/v1'
-          : 'http://localhost:8000/api/v1';
-
-  ApiService._internal();
-
-  String? _jwtToken;
-
-  // Call this when the app starts if a token is saved in SharedPreferences
-  void setToken(String token) {
-    _jwtToken = token;
+  static void setAuthToken(String? token) {
+    _authToken = token;
   }
 
-  // Helper to dynamically get headers with the Auth Token
-  Map<String, String> get _authHeaders {
-    return {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      if (_jwtToken != null) 'Authorization': 'Bearer $_jwtToken',
-    };
-  }
+  static Map<String, String> get _headers => {
+    'Content-Type': 'application/json',
+    if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+  };
 
-  // --- Auth Methods ---
-  Future<Map<String, dynamic>> signup(String name, String email, String password) async {
-    final url = Uri.parse('$_baseUrl/auth/signup');
-    try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({"name": name, "email": email, "password": password}),
-      );
-      
-      if (response.statusCode == 200) {
-        return {'success': true, 'data': jsonDecode(response.body)};
-      } else {
-        return {'success': false, 'message': jsonDecode(response.body)['detail']};
-      }
-    } catch (e) {
-      return {'success': false, 'message': 'Network Error: $e'};
+  // Auth
+  static Future<Map<String, dynamic>> login(String email, String password) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/auth/login'),
+      headers: _headers,
+      body: jsonEncode({'email': email, 'password': password}),
+    );
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body);
+      _authToken = data['access_token'];
+      return data;
     }
+    throw Exception('Login failed: ${res.body}');
   }
 
-  Future<Map<String, dynamic>> login(String email, String password) async {
-    final url = Uri.parse('$_baseUrl/auth/login');
-    try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({"email": email, "password": password}),
-      );
-      
-      if (response.statusCode == 200) {
-        return {'success': true, 'data': jsonDecode(response.body)};
-      } else {
-        return {'success': false, 'message': jsonDecode(response.body)['detail']};
-      }
-    } catch (e) {
-      return {'success': false, 'message': 'Network Error: $e'};
+  static Future<Map<String, dynamic>> register(Map<String, dynamic> payload) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/auth/register'),
+      headers: _headers,
+      body: jsonEncode(payload),
+    );
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body);
+      _authToken = data['access_token'];
+      return data;
     }
+    throw Exception('Registration failed: ${res.body}');
   }
 
-  // =========================================================================
-  // 1. FREE-FORM AI CHAT (Routed through FastAPI for RAG)
-  // =========================================================================
-  
-  // UPDATED: Now requires a sessionId (made optional for compatibility)
-  Future<String> sendChatMessage(String prompt, {String? sessionId, Uint8List? imageBytes}) async {
-    final uri = Uri.parse('$_baseUrl/chat');
-
-    // If a screen didn't provide a sessionId, auto-generate a unique timestamp-based one
-    final String effectiveSessionId = sessionId ?? DateTime.now().millisecondsSinceEpoch.toString();
-
-    try {
-      var request = http.MultipartRequest('POST', uri);
-      
-      // --- CRITICAL: Add the Auth Token Header to the Multipart Request ---
-      request.headers.addAll(_authHeaders);
-      
-      // Add text fields
-      request.fields['prompt'] = prompt;
-      request.fields['session_id'] = effectiveSessionId; 
-
-      // Add image if attached
-      if (imageBytes != null) {
-        request.files.add(
-          http.MultipartFile.fromBytes(
-            'image',
-            imageBytes,
-            filename: 'upload.jpg',
-          ),
-        );
-      }
-
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['response'];
-      } else {
-        return "Server Error: ${response.body}";
-      }
-    } catch (e) {
-      return "AI Connection Error: Please check if your FastAPI server is running. Details: $e";
+  // Health Score
+  static Future<HealthScoreResult> calculateHealthScore(Map<String, dynamic> payload) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/health-score'),
+      headers: _headers,
+      body: jsonEncode(payload),
+    );
+    if (res.statusCode == 200) {
+      return HealthScoreResult.fromJson(jsonDecode(res.body));
     }
+    throw Exception('Failed to calculate health score: ${res.body}');
   }
 
-  // NEW: Fetch past chats
-  Future<Map<String, dynamic>> fetchChatHistory() async {
-    final uri = Uri.parse('$_baseUrl/chat/history'); // Secure: user_id is extracted from JWT on backend
-    try {
-      final response = await http.get(uri, headers: _authHeaders);
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body)['sessions'];
-      }
-      return {};
-    } catch (e) {
-      debugPrint("Error fetching history: $e");
-      return {};
+  // Symptom Analysis
+  static Future<Map<String, dynamic>> analyzeSymptoms(String symptoms, Map<String, dynamic>? context) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/analyze-symptoms'),
+      headers: _headers,
+      body: jsonEncode({'symptoms': symptoms, 'patient_context': context}),
+    );
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body);
     }
+    throw Exception('Symptom analysis failed: ${res.body}');
   }
 
-  // =========================================================================
-  // 2. STRUCTURED SYMPTOM ANALYSIS (To FastAPI Backend - Used in providers)
-  // =========================================================================
-
-  Future<ClinicalAssessment> analyzeSymptoms(SymptomPayload payload) async {
-    final url = Uri.parse('$_baseUrl/analyze');
-
-    try {
-      final response = await http.post(
-        url,
-        headers: _authHeaders,
-        body: jsonEncode(payload.toJson()),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return ClinicalAssessment.fromJson(data);
-      } else {
-        throw Exception('Server Error: ${response.body}');
-      }
-    } catch (e) {
-      return ClinicalAssessment(
-        assessment: 'Network error. Could not reach the NirogX backend.',
-        redFlags: ['Connection Failed'],
-        confidenceScore: 0.0,
-      );
+  // AI Chat
+  static Future<String> sendChatMessage(List<Map<String, String>> messages, Map<String, dynamic>? vitalsContext) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/chat'),
+      headers: _headers,
+      body: jsonEncode({'messages': messages, 'vitals_context': vitalsContext}),
+    );
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body);
+      return data['content'] ?? '';
     }
+    throw Exception('Chat request failed: ${res.body}');
   }
 
-  // =========================================================================
-  // 3. HEALTH SCORE CALCULATOR (To FastAPI Backend)
-  // =========================================================================
-
-  Future<HealthScoreResult> calculateHealthScore(UserVitalsPayload payload) async {
-    final url = Uri.parse('$_baseUrl/health-score');
-
-    try {
-      final response = await http.post(
-        url,
-        headers: _authHeaders,
-        body: jsonEncode(payload.toJson()),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return HealthScoreResult.fromJson(data);
-      } else {
-        throw Exception('Server Error: ${response.body}');
-      }
-    } catch (e) {
-      throw Exception('Network error: $e');
-    }
-  }
-
-  // =========================================================================
-  // 4. MANUAL PROFILE DATA (To FastAPI Backend)
-  // =========================================================================
-
-  Future<bool> addMedicalHistory(String condition) async {
-    final url = Uri.parse('$_baseUrl/profile/medical-history');
-    try {
-      final response = await http.post(
-        url,
-        headers: _authHeaders,
-        body: jsonEncode({"condition": condition}), // user_id extracted from JWT on backend
-      );
-      return response.statusCode == 200;
-    } catch (e) {
-      debugPrint("Error adding medical history: $e");
-      return false;
-    }
-  }
-
-  Future<bool> updateGoal(String goalType, double targetValue) async {
-    final url = Uri.parse('$_baseUrl/profile/goals');
-    try {
-      final response = await http.post(
-        url,
-        headers: _authHeaders,
-        body: jsonEncode({"goal_type": goalType, "target_value": targetValue}), // user_id extracted from JWT on backend
-      );
-      return response.statusCode == 200;
-    } catch (e) {
-      debugPrint("Error updating goal: $e");
-      return false;
-    }
-  }
-
-  Future<bool> logManualVital(String type, double value, String unit) async {
-    final url = Uri.parse('$_baseUrl/vitals/manual');
-    try {
-      final response = await http.post(
-        url,
-        headers: _authHeaders,
-        body: jsonEncode({"type": type, "value": value, "unit": unit}), // user_id extracted from JWT on backend
-      );
-      return response.statusCode == 200;
-    } catch (e) {
-      debugPrint("Error logging vital: $e");
-      return false;
-    }
+  // Vitals Logging
+  static Future<void> logVital(VitalRecord record) async {
+    await http.post(
+      Uri.parse('$baseUrl/vitals'),
+      headers: _headers,
+      body: jsonEncode(record.toJson()),
+    );
   }
 }
