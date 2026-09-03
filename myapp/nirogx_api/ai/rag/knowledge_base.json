@@ -1,0 +1,87 @@
+{
+  "kb_version": "medical-kb-v1.0",
+  "license": "clinical-guidelines-reference",
+  "guidelines": [
+    {
+      "id": "KB-CARDIO-001",
+      "category": "cardiovascular",
+      "keywords": ["chest pain", "troponin", "substernal", "diaphoresis", "jaw pain", "arm pain", "shortness of breath", "angina"],
+      "title": "Acute Coronary Syndrome & Chest Pain Clinical Guidelines",
+      "reference_standards": {
+        "hs_troponin_i": "<14 ng/L (Normal threshold; >14 indicates acute myocardial necrosis)",
+        "resting_heart_rate": "60-100 bpm (Tachycardia >100 bpm; Bradycardia <60 bpm)"
+      },
+      "clinical_guidance": "Substernal chest pressure radiating to the arm/jaw with diaphoresis requires immediate emergency ECG and cardiac biomarker evaluation. Do not reassure without physician evaluation."
+    },
+    {
+      "id": "KB-METABOLIC-001",
+      "category": "endocrine_metabolic",
+      "keywords": ["glucose", "fasting glucose", "hba1c", "diabetes", "polyuria", "polydipsia", "dka", "ketoacidosis", "blood sugar"],
+      "title": "Glycemic Markers & Diabetes Management Guidelines",
+      "reference_standards": {
+        "fasting_glucose": "70-99 mg/dL (Normal), 100-125 mg/dL (Impaired fasting glucose), >=126 mg/dL (Diabetes threshold)",
+        "hba1c": "<5.7% (Normal), 5.7-6.4% (Prediabetes), >=6.5% (Diabetes diagnostic criterion)"
+      },
+      "clinical_guidance": "Fasting glucose >126 mg/dL or HbA1c >=6.5% requires confirmatory testing and clinical correlation. Extreme glucose (>300 mg/dL with ketones) requires urgent metabolic evaluation."
+    },
+    {
+      "id": "KB-HEMATOLOGY-001",
+      "category": "hematology",
+      "keywords": ["hemoglobin", "hb", "anemia", "platelets", "wbc", "cbc", "fatigue", "mcv", "ferritin", "iron"],
+      "title": "Complete Blood Count & Anemia Evaluation Standards",
+      "reference_standards": {
+        "hemoglobin_male": "13.5-17.5 g/dL",
+        "hemoglobin_female": "12.0-15.5 g/dL",
+        "platelet_count": "150-450 x10^3/uL",
+        "total_leukocytes": "4.0-11.0 x10^3/uL"
+      },
+      "clinical_guidance": "Hemoglobin <12.0 g/dL in women or <13.5 g/dL in men indicates anemia; ferritin and iron studies are indicated to evaluate microcytic hypochromic patterns."
+    },
+    {
+      "id": "KB-RENAL-001",
+      "category": "renal",
+      "keywords": ["creatinine", "egfr", "bun", "urea", "kidney", "proteinuria", "protein in urine"],
+      "title": "Renal Function & Glomerular Filtration Standards",
+      "reference_standards": {
+        "serum_creatinine_male": "0.7-1.3 mg/dL",
+        "serum_creatinine_female": "0.6-1.1 mg/dL",
+        "egfr": ">60 mL/min/1.73m2 (Values <60 suggest decreased kidney function)"
+      },
+      "clinical_guidance": "Elevated serum creatinine with reduced eGFR (<60 mL/min) warrants assessment of hydration status, nephrotoxic medications, and chronic renal parameters."
+    },
+    {
+      "id": "KB-THYROID-001",
+      "category": "thyroid",
+      "keywords": ["tsh", "free t4", "free t3", "thyroid", "hypothyroid", "hyperthyroid", "cold intolerance", "heat intolerance"],
+      "title": "Thyroid Function Testing Guidelines",
+      "reference_standards": {
+        "tsh": "0.4-4.0 uIU/mL",
+        "free_t4": "0.8-1.8 ng/dL"
+      },
+      "clinical_guidance": "Elevated TSH (>4.0 uIU/mL) with low Free T4 indicates primary hypothyroidism; low TSH (<0.4 uIU/mL) with elevated Free T4 indicates hyperthyroidism."
+    },
+    {
+      "id": "KB-LIVER-001",
+      "category": "hepatic",
+      "keywords": ["alt", "ast", "bilirubin", "liver", "transaminases", "jaundice", "dark urine"],
+      "title": "Hepatic Transaminases & Liver Panel Guidelines",
+      "reference_standards": {
+        "alt": "7-56 U/L",
+        "ast": "10-40 U/L",
+        "total_bilirubin": "0.2-1.2 mg/dL"
+      },
+      "clinical_guidance": "Transaminase elevations (ALT > AST) suggest hepatocellular inflammation or parenchymal stress; total bilirubin >1.5 mg/dL warrants cholestatic evaluation."
+    },
+    {
+      "id": "KB-ELECTROLYTES-001",
+      "category": "electrolytes",
+      "keywords": ["potassium", "sodium", "serum potassium", "hyperkalemia", "hypokalemia", "hyponatremia"],
+      "title": "Serum Electrolytes & Panic Thresholds",
+      "reference_standards": {
+        "serum_potassium": "3.5-5.0 mEq/L (Critical Panic Values: <2.8 or >6.0 mEq/L)",
+        "serum_sodium": "135-145 mEq/L"
+      },
+      "clinical_guidance": "Potassium >6.0 mEq/L represents severe hyperkalemia with arrhythmia risk; urgent clinical and ECG monitoring required."
+    }
+  ]
+}
