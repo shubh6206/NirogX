@@ -1,0 +1,46 @@
+{
+  "experiment_id": "EXP-NIROGX-MEDGEMMA-001",
+  "model_name": "NirogX-MedGemma-4B",
+  "base_model": "google/medgemma-1.5-4b-it",
+  "dataset_version": "nirogx-medical-dataset-v0.1",
+  "train_samples": 480,
+  "val_samples": 60,
+  "hyperparameters": {
+    "output_dir": "models/nirogx-medgemma-4b-v0.1",
+    "num_train_epochs": 2,
+    "per_device_train_batch_size": 2,
+    "per_device_eval_batch_size": 2,
+    "gradient_accumulation_steps": 4,
+    "learning_rate": 0.0001,
+    "weight_decay": 0.01,
+    "warmup_ratio": 0.05,
+    "logging_steps": 10,
+    "eval_strategy": "steps",
+    "eval_steps": 50,
+    "save_strategy": "epoch",
+    "max_seq_length": 4096,
+    "fp16": false,
+    "bf16": true,
+    "seed": 42
+  },
+  "lora_config": {
+    "r": 16,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "bias": "none",
+    "task_type": "CAUSAL_LM",
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ]
+  },
+  "is_simulated": true,
+  "training_duration_seconds": 688.09,
+  "training_loss_final": 0.342,
+  "validation_loss_final": 0.389
+}

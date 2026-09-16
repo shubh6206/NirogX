@@ -1,0 +1,18 @@
+{
+  "base_model_name_or_path": "google/medgemma-1.5-4b-it",
+  "lora_alpha": 32,
+  "lora_dropout": 0.05,
+  "r": 16,
+  "target_modules": [
+    "q_proj",
+    "k_proj",
+    "v_proj",
+    "o_proj",
+    "gate_proj",
+    "up_proj",
+    "down_proj"
+  ],
+  "task_type": "CAUSAL_LM",
+  "peft_type": "LORA",
+  "is_simulated_training": true
+}
