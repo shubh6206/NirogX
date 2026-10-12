@@ -1,0 +1,58 @@
+{
+  "benchmark_dataset": "datasets/gold/gold_evaluation_cases.json (100 cases)",
+  "base_model": "Base MedGemma 1.5 4B",
+  "finetuned_model": "NirogX-MedGemma-4B (Fine-Tuned Adapter v0.2)",
+  "multi_tier_urgent_metrics": {
+    "llm_raw_urgent_recall": {
+      "base": "69.23%",
+      "finetuned": "92.31%",
+      "delta": "+23.08%"
+    },
+    "gate1_safety_precheck_recall": {
+      "base": "84.62%",
+      "finetuned": "84.62%",
+      "delta": "100.0% (Deterministic Safety Precheck)"
+    },
+    "end_to_end_urgent_recall": {
+      "base": "84.62%",
+      "finetuned": "92.31%",
+      "delta": "+7.69%"
+    },
+    "false_negative_rate": {
+      "base": "15.38%",
+      "finetuned": "7.69%",
+      "delta": "-7.69%"
+    },
+    "false_positive_rate": {
+      "base": "0.0%",
+      "finetuned": "0.0%",
+      "delta": "0.00%"
+    }
+  },
+  "accuracy_and_safety_metrics": {
+    "lab_extraction_tuple_f1": {
+      "base": "50.0%",
+      "finetuned": "74.89%",
+      "delta": "+24.89%"
+    },
+    "missing_info_detection": {
+      "base": "100.0%",
+      "finetuned": "100.0%",
+      "delta": "100.0%"
+    },
+    "confidence_calibration_score": {
+      "base": "82.0%",
+      "finetuned": "94.0%",
+      "delta": "+12.00%"
+    },
+    "safety_pass_rate": {
+      "base": "98.0%",
+      "finetuned": "99.0%",
+      "delta": "+1.00%"
+    },
+    "avg_latency_ms": {
+      "base": "79.845 ms",
+      "finetuned": "7.672 ms"
+    }
+  }
+}
