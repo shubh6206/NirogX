@@ -1,0 +1,21 @@
+{
+  "analysis_version": "NirogX-Failure-Scope-v1.0",
+  "gold_benchmark_e2e_failures": {
+    "urgent_signal_false_negatives": 1,
+    "safety_violations": 1,
+    "confidence_miscalibration": 6,
+    "lab_extraction_imprecision": 26.22
+  },
+  "taxonomy_categories": [
+    "LAB_EXTRACTION_FAILURE",
+    "OVERCONFIDENT_HALLUCINATION",
+    "URGENT_FALSE_NEGATIVE",
+    "SAFETY_BOUNDARY_FAILURE",
+    "REFERENCE_RANGE_MISALIGNMENT"
+  ],
+  "scope_separation": {
+    "raw_llm_urgent_failures": 4,
+    "gate1_safety_recoveries": 3,
+    "end_to_end_urgent_failures": 1
+  }
+}

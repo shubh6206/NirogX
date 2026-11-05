@@ -1,0 +1,26 @@
+{
+  "release_version": "NirogX-MedGemma-4B-v1.0-RC",
+  "random_seeds": {
+    "gold": 42,
+    "hidden": 2026,
+    "rag": 42,
+    "holdout": 777
+  },
+  "dataset_checksums": {
+    "gold_evaluation_cases.json (100 cases)": "bb911e180269a51ee773ecd84f1fa83c81c8458198814321f959ae61ac4b855a",
+    "hidden_evaluation_cases.json (100 cases)": "a023fa861c2f9c1ea2c9c1949e567be968133454ed14e97aae85ef9682ed0aa3",
+    "rag_evaluation_cases.json (100 cases)": "9a45484644983e3198ffbc659186115865ea2816b805886226a45ed1aea640e3",
+    "rag_holdout_cases.json (100 cases)": "7efab96b65461c5dda12ec1f92ed7a22be640ff5ca7433669ab013513dd8c389",
+    "knowledge_base.json (medical-kb-v1.0)": "59cfea48ff279cfc79d73e3f3781dd152f942cb2badaf878b0bdc3690dd5f2eb"
+  },
+  "runtime_provenance": "simulated_local_engine",
+  "genuine_model_inference_status": "BLOCKED: GPU weights unavailable in local Windows CPU environment",
+  "benchmark_runs": [
+    "gold (100)",
+    "hidden (100)",
+    "rag (100)",
+    "holdout (100)"
+  ],
+  "validation_test_count": 36,
+  "validation_test_status": "36 passed"
+}

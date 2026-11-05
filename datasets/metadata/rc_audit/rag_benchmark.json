@@ -1,0 +1,33 @@
+{
+  "benchmark": "rag_evaluation_cases.json (100 Cases: Reference-Ranges, Unit Conversions, Guidelines, Defusals, Abstention)",
+  "results": {
+    "Base MedGemma (No RAG)": {
+      "evidence_grounding_accuracy_pct": "35.0%",
+      "confidence_calibration_pct": "80.0%",
+      "knowledge_abstention_accuracy_pct": "0.0%",
+      "safety_pass_rate_pct": "100.0%",
+      "avg_latency_ms": "0.506 ms"
+    },
+    "Base MedGemma + RAG": {
+      "evidence_grounding_accuracy_pct": "100.0%",
+      "confidence_calibration_pct": "80.0%",
+      "knowledge_abstention_accuracy_pct": "100.0%",
+      "safety_pass_rate_pct": "100.0%",
+      "avg_latency_ms": "0.318 ms"
+    },
+    "Fine-Tuned NirogX (No RAG)": {
+      "evidence_grounding_accuracy_pct": "35.0%",
+      "confidence_calibration_pct": "100.0%",
+      "knowledge_abstention_accuracy_pct": "0.0%",
+      "safety_pass_rate_pct": "100.0%",
+      "avg_latency_ms": "0.251 ms"
+    },
+    "Fine-Tuned NirogX + RAG": {
+      "evidence_grounding_accuracy_pct": "100.0%",
+      "confidence_calibration_pct": "100.0%",
+      "knowledge_abstention_accuracy_pct": "100.0%",
+      "safety_pass_rate_pct": "100.0%",
+      "avg_latency_ms": "1.1 ms"
+    }
+  }
+}

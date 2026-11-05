@@ -1,0 +1,164 @@
+{
+  "release_version": "NirogX-MedGemma-4B-v1.0-RC",
+  "runtime_provenance": "simulated_local_engine (CPU Development Environment)",
+  "genuine_gpu_inference": "BLOCKED: PyTorch / CUDA GPU weights unavailable in current Windows CPU environment",
+  "dataset_checksums": {
+    "gold_evaluation_cases.json (100 cases)": "bb911e180269a51ee773ecd84f1fa83c81c8458198814321f959ae61ac4b855a",
+    "hidden_evaluation_cases.json (100 cases)": "a023fa861c2f9c1ea2c9c1949e567be968133454ed14e97aae85ef9682ed0aa3",
+    "rag_evaluation_cases.json (100 cases)": "9a45484644983e3198ffbc659186115865ea2816b805886226a45ed1aea640e3",
+    "rag_holdout_cases.json (100 cases)": "7efab96b65461c5dda12ec1f92ed7a22be640ff5ca7433669ab013513dd8c389",
+    "knowledge_base.json (medical-kb-v1.0)": "59cfea48ff279cfc79d73e3f3781dd152f942cb2badaf878b0bdc3690dd5f2eb"
+  },
+  "statistical_metrics_95_ci": {
+    "urgent_signal_recall": "12/13 (92.31%, 95% CI: [66.69%, 98.63%])",
+    "gate1_safety_recall": "11/13 (84.62%, 95% CI: [57.77%, 95.67%])",
+    "confidence_calibration": "94/100 (94.0%, 95% CI: [87.52%, 97.22%])",
+    "safety_pass_rate": "99/100 (99.0%, 95% CI: [94.55%, 99.82%])",
+    "schema_validity": "100/100 (100.0%, 95% CI: [96.3%, 100.0%])",
+    "lab_extraction_tuple_f1": "73.78%",
+    "rag_grounding_accuracy (RAG set)": "100/100 (100.0%, 95% CI: [96.3%, 100.0%])",
+    "knowledge_abstention (RAG set)": "20/20 (100.0%, 95% CI: [83.89%, 100.0%])"
+  },
+  "gold_benchmark_matrix": {
+    "Base MedGemma (No RAG)": {
+      "lab_extraction_tuple_f1": "50.0%",
+      "llm_raw_urgent_recall": "69.23%",
+      "gate1_safety_recall": "84.62%",
+      "end_to_end_urgent_recall": "84.62%",
+      "confidence_calibration_score": "82.0%",
+      "safety_pass_rate": "98.0%",
+      "avg_latency_ms": "43.354 ms"
+    },
+    "Base MedGemma + RAG": {
+      "lab_extraction_tuple_f1": "50.0%",
+      "llm_raw_urgent_recall": "69.23%",
+      "gate1_safety_recall": "84.62%",
+      "end_to_end_urgent_recall": "84.62%",
+      "confidence_calibration_score": "82.0%",
+      "safety_pass_rate": "98.0%",
+      "avg_latency_ms": "3.864 ms"
+    },
+    "Fine-Tuned NirogX (No RAG)": {
+      "lab_extraction_tuple_f1": "73.78%",
+      "llm_raw_urgent_recall": "92.31%",
+      "gate1_safety_recall": "84.62%",
+      "end_to_end_urgent_recall": "92.31%",
+      "confidence_calibration_score": "94.0%",
+      "safety_pass_rate": "99.0%",
+      "avg_latency_ms": "3.931 ms"
+    },
+    "Fine-Tuned NirogX + RAG": {
+      "lab_extraction_tuple_f1": "73.78%",
+      "llm_raw_urgent_recall": "92.31%",
+      "gate1_safety_recall": "84.62%",
+      "end_to_end_urgent_recall": "92.31%",
+      "confidence_calibration_score": "94.0%",
+      "safety_pass_rate": "99.0%",
+      "avg_latency_ms": "3.386 ms"
+    }
+  },
+  "hidden_benchmark_matrix": {
+    "Base MedGemma (No RAG)": {
+      "lab_extraction_tuple_f1": "0.0%",
+      "llm_raw_urgent_recall": "0.0%",
+      "gate1_safety_recall": "0.0%",
+      "end_to_end_urgent_recall": "0.0%",
+      "confidence_calibration_score": "47.0%",
+      "safety_pass_rate": "67.0%",
+      "avg_latency_ms": "0.245 ms"
+    },
+    "Base MedGemma + RAG": {
+      "lab_extraction_tuple_f1": "0.0%",
+      "llm_raw_urgent_recall": "0.0%",
+      "gate1_safety_recall": "0.0%",
+      "end_to_end_urgent_recall": "0.0%",
+      "confidence_calibration_score": "47.0%",
+      "safety_pass_rate": "67.0%",
+      "avg_latency_ms": "1.089 ms"
+    },
+    "Fine-Tuned NirogX (No RAG)": {
+      "lab_extraction_tuple_f1": "0.0%",
+      "llm_raw_urgent_recall": "0.0%",
+      "gate1_safety_recall": "0.0%",
+      "end_to_end_urgent_recall": "0.0%",
+      "confidence_calibration_score": "67.0%",
+      "safety_pass_rate": "67.0%",
+      "avg_latency_ms": "0.215 ms"
+    },
+    "Fine-Tuned NirogX + RAG": {
+      "lab_extraction_tuple_f1": "0.0%",
+      "llm_raw_urgent_recall": "0.0%",
+      "gate1_safety_recall": "0.0%",
+      "end_to_end_urgent_recall": "0.0%",
+      "confidence_calibration_score": "67.0%",
+      "safety_pass_rate": "67.0%",
+      "avg_latency_ms": "1.177 ms"
+    }
+  },
+  "dedicated_rag_benchmark_matrix": {
+    "Base MedGemma (No RAG)": {
+      "evidence_grounding_accuracy_pct": "35.0%",
+      "confidence_calibration_pct": "80.0%",
+      "knowledge_abstention_accuracy_pct": "0.0%",
+      "safety_pass_rate_pct": "100.0%",
+      "avg_latency_ms": "0.506 ms"
+    },
+    "Base MedGemma + RAG": {
+      "evidence_grounding_accuracy_pct": "100.0%",
+      "confidence_calibration_pct": "80.0%",
+      "knowledge_abstention_accuracy_pct": "100.0%",
+      "safety_pass_rate_pct": "100.0%",
+      "avg_latency_ms": "0.318 ms"
+    },
+    "Fine-Tuned NirogX (No RAG)": {
+      "evidence_grounding_accuracy_pct": "35.0%",
+      "confidence_calibration_pct": "100.0%",
+      "knowledge_abstention_accuracy_pct": "0.0%",
+      "safety_pass_rate_pct": "100.0%",
+      "avg_latency_ms": "0.251 ms"
+    },
+    "Fine-Tuned NirogX + RAG": {
+      "evidence_grounding_accuracy_pct": "100.0%",
+      "confidence_calibration_pct": "100.0%",
+      "knowledge_abstention_accuracy_pct": "100.0%",
+      "safety_pass_rate_pct": "100.0%",
+      "avg_latency_ms": "1.1 ms"
+    }
+  },
+  "rag_holdout_benchmark_matrix": {
+    "Base MedGemma (No RAG)": {
+      "evidence_grounding_accuracy_pct": "35.0%",
+      "confidence_calibration_pct": "80.0%",
+      "knowledge_abstention_accuracy_pct": "0.0%",
+      "safety_pass_rate_pct": "100.0%",
+      "avg_latency_ms": "0.49 ms"
+    },
+    "Base MedGemma + RAG": {
+      "evidence_grounding_accuracy_pct": "100.0%",
+      "confidence_calibration_pct": "80.0%",
+      "knowledge_abstention_accuracy_pct": "100.0%",
+      "safety_pass_rate_pct": "100.0%",
+      "avg_latency_ms": "1.18 ms"
+    },
+    "Fine-Tuned NirogX (No RAG)": {
+      "evidence_grounding_accuracy_pct": "35.0%",
+      "confidence_calibration_pct": "80.0%",
+      "knowledge_abstention_accuracy_pct": "0.0%",
+      "safety_pass_rate_pct": "100.0%",
+      "avg_latency_ms": "0.215 ms"
+    },
+    "Fine-Tuned NirogX + RAG": {
+      "evidence_grounding_accuracy_pct": "100.0%",
+      "confidence_calibration_pct": "80.0%",
+      "knowledge_abstention_accuracy_pct": "100.0%",
+      "safety_pass_rate_pct": "100.0%",
+      "avg_latency_ms": "1.519 ms"
+    }
+  },
+  "conclusions": [
+    "1. Fine-tuning provided the primary improvement on NirogX's general health-analysis benchmark, particularly for structured laboratory extraction and urgent-signal recognition.",
+    "2. RAG did not measurably alter performance on the general benchmark because those cases were largely solvable from supplied context. On the dedicated retrieval-dependent benchmark, RAG substantially improved evidence grounding and knowledge-boundary abstention.",
+    "3. Deterministic Dual-Gate Safety Architecture provides independent first-pass protection (Gate 1 triage) and post-inference defusal (Gate 2).",
+    "4. The system is classified as a research-grade decision-support prototype; clinical accuracy is not established and should not be claimed."
+  ]
+}

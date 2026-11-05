@@ -1,0 +1,9 @@
+{
+  "python_version": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+  "platform": "win32",
+  "executable": "C:\\Users\\shubh\\Nirogx\\myapp\\nirogx_api\\venv_win\\Scripts\\python.exe",
+  "torch_cuda_available": false,
+  "runtime_provenance": "simulated_local_engine",
+  "genuine_gpu_inference_available": false,
+  "status": "BLOCKED for GPU weights; verified on simulated engine"
+}
