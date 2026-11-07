@@ -1,0 +1,25 @@
+{
+  "model_name": "NirogX-MedGemma-4B",
+  "version": "1.0-RC",
+  "base_model": "google/medgemma-1.5-4b-it",
+  "tuning_method": "PEFT / QLoRA 4-bit NF4",
+  "adapter_config": {
+    "r": 16,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ]
+  },
+  "knowledge_base": "medical-kb-v1.0",
+  "safety_gates": [
+    "Gate 1: Pre-Inference Triage",
+    "Gate 2: Post-Inference Sanitizer"
+  ]
+}
